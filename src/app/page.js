@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import Papa from "papaparse";
 // import debounce from "lodash/debounce";
@@ -29,6 +29,30 @@ export default function Home() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const formRef = useRef(null);
 
+  const generatePreview = useCallback(
+    async function () {
+      if (formRef.current) {
+        const { fontSize, textX, textY } = Object.fromEntries(
+          new FormData(formRef.current).entries()
+        );
+
+        if (bgPhoto && fontSize && textX && textY) {
+          setPreviewLoading(true);
+
+          try {
+            const preview = await generatePreviewImg({ bgPhoto, fontSize, textX, textY });
+            setPreview(preview);
+          } catch (error) {
+            console.log(error);
+          } finally {
+            setPreviewLoading(false);
+          }
+        }
+      }
+    },
+    [bgPhoto]
+  );
+
   useEffect(() => {
     const form = formRef.current;
 
@@ -40,28 +64,7 @@ export default function Home() {
         form.removeEventListener("change", generatePreview);
       }
     };
-  }, []);
-
-  async function generatePreview() {
-    if (formRef.current) {
-      const { bgPhoto, fontSize, textX, textY } = Object.fromEntries(
-        new FormData(formRef.current).entries()
-      );
-
-      if (bgPhoto && fontSize && textX && textY) {
-        setPreviewLoading(true);
-
-        try {
-          const preview = await generatePreviewImg({ bgPhoto, fontSize, textX, textY });
-          setPreview(preview);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setPreviewLoading(false);
-        }
-      }
-    }
-  }
+  }, [generatePreview]);
 
   function onChangeBgPhoto(event) {
     const url = URL.createObjectURL(event.target.files[0]);
