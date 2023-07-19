@@ -29,29 +29,26 @@ export default function Home() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const formRef = useRef(null);
 
-  const generatePreview = useCallback(
-    async function () {
-      if (formRef.current) {
-        const { fontSize, textX, textY } = Object.fromEntries(
-          new FormData(formRef.current).entries()
-        );
+  const generatePreview = useCallback(async function () {
+    if (formRef.current) {
+      const { bgPhoto, fontSize, textX, textY } = Object.fromEntries(
+        new FormData(formRef.current).entries()
+      );
 
-        if (bgPhoto && fontSize && textX && textY) {
-          setPreviewLoading(true);
+      if (bgPhoto && fontSize && textX && textY) {
+        setPreviewLoading(true);
 
-          try {
-            const preview = await generatePreviewImg({ bgPhoto, fontSize, textX, textY });
-            setPreview(preview);
-          } catch (error) {
-            console.log(error);
-          } finally {
-            setPreviewLoading(false);
-          }
+        try {
+          const preview = await generatePreviewImg({ bgPhoto, fontSize, textX, textY });
+          setPreview(preview);
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setPreviewLoading(false);
         }
       }
-    },
-    [bgPhoto]
-  );
+    }
+  }, []);
 
   useEffect(() => {
     const form = formRef.current;
@@ -181,7 +178,7 @@ export default function Home() {
                 name="textX"
                 type="number"
                 accept=".png, .jpg"
-                defaultValue={0}
+                defaultValue={1754}
                 min={0}
                 max={Number.MAX_SAFE_INTEGER}
                 step={1}
@@ -196,7 +193,7 @@ export default function Home() {
                 name="textY"
                 type="number"
                 accept=".png, .jpg"
-                defaultValue={0}
+                defaultValue={1240}
                 min={0}
                 max={Number.MAX_SAFE_INTEGER}
                 step={1}
