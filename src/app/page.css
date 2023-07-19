@@ -1,10 +1,10 @@
-.switch input[type="checkbox"] {
+/* .switch-bg input[type="checkbox"] {
   height: 0;
   width: 0;
   visibility: hidden;
 }
 
-.switch .toggle {
+.switch-bg .switch-toggle {
   cursor: pointer;
   text-indent: -9999px;
   width: 4rem;
@@ -15,7 +15,7 @@
   position: relative;
 }
 
-.switch .toggle:after {
+.switch-bg .switch-toggle:after {
   content: "";
   position: absolute;
   top: 0.25rem;
@@ -27,18 +27,18 @@
   transition: 0.3s;
 }
 
-.switch input:checked + .toggle {
+.switch-bg input:checked + .switch-toggle {
   background: #4f46e5;
 }
 
-.switch input:checked + .toggle:after {
+.switch-bg input:checked + .switch-toggle:after {
   left: calc(100% - 0.25rem);
   transform: translateX(-100%);
 }
 
-.switch .toggle:active:after {
+.switch-bg .switch-toggle:active:after {
   width: 2rem;
-}
+} */
 
 /* Loader 1 */
 .loader-1 {

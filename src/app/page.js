@@ -35,7 +35,7 @@ export default function Home() {
         new FormData(formRef.current).entries()
       );
 
-      if (bgPhoto && fontSize && textX && textY) {
+      if (bgPhoto?.size && fontSize && textX && textY) {
         setPreviewLoading(true);
 
         try {
@@ -104,13 +104,13 @@ export default function Home() {
           <div className="container flex flex-col mx-auto">
             <Field label="Download as:" labelFor="type">
               <div>
-                <input id="pdf" name="type" type="radio" value="pdf" defaultChecked required />
+                <input id="pdf" name="type" type="radio" value="pdf" required />
                 <label htmlFor="pdf" className="ml-2">
                   PDF
                 </label>
               </div>
               <div>
-                <input id="png" name="type" type="radio" value="png" />
+                <input id="png" name="type" type="radio" value="png" required />
                 <label htmlFor="png" className="ml-2">
                   PNG
                 </label>
@@ -118,12 +118,12 @@ export default function Home() {
             </Field>
 
             {/* Switch */}
-            <div className="switch flex flex-row items-center mb-6 select-none">
+            <div className="flex flex-row items-center mb-6 select-none">
               <input id="separate" name="separate" type="checkbox" />
-              <label htmlFor="separate" className="toggle mr-2">
+              {/* <label htmlFor="separate" className="switch-toggle">
                 Toggle
-              </label>
-              <label htmlFor="separate" className="font-bold text-lg text-gray-900">
+              </label> */}
+              <label htmlFor="separate" className="ml-2 font-bold text-lg text-gray-900">
                 Download as separate files?
               </label>
               <span className="ml-1 italic text-gray-900">(for PDF only)</span>
@@ -219,7 +219,7 @@ export default function Home() {
             <div className="w-full h-60 bg-gray-50">
               {previewLoading && (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div class="loader-1">
+                  <div className="loader-1">
                     <span></span>
                   </div>
                 </div>
