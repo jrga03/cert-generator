@@ -1,5 +1,6 @@
 // import PDFDocument from "pdfkit";
 import blobStream from "blob-stream";
+import { PAGE_HEIGHT, PAGE_WIDTH } from "./page-size";
 
 function pixelsToPoints(pixel) {
   return (pixel * 72) / 300;
@@ -53,8 +54,8 @@ const loadFont = (pdfDoc, name, type, url) =>
  */
 const constructPDF = ({ names, img, fontSize, textY }) =>
   new Promise(async (resolve, reject) => {
-    const pageWidth = pixelsToPoints(3508);
-    const pageHeight = pixelsToPoints(2480);
+    const pageWidth = pixelsToPoints(PAGE_WIDTH);
+    const pageHeight = pixelsToPoints(PAGE_HEIGHT);
 
     const options = {
       layout: "landscape",

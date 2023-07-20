@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { PAGE_HEIGHT, PAGE_WIDTH } from "./page-size";
 
 /**
  * Attaches image to the canvas
@@ -101,8 +102,8 @@ const addPageToZip = (
  * @returns {Blob}
  */
 const constructZip = async (mime, { names, img, fontSize, textX, textY }) => {
-  const pageWidth = 3508;
-  const pageHeight = 2480;
+  const pageWidth = PAGE_WIDTH;
+  const pageHeight = PAGE_HEIGHT;
 
   // create zip
   const zip = new JSZip();

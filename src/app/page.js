@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Script from "next/script";
 import Papa from "papaparse";
-// import debounce from "lodash/debounce";
 
 import { download } from "@/utils/download";
 import { readAsDataURL } from "@/utils/data-url";
-import { generatePreviewImg } from "@/utils/preview";
+import { generatePreview } from "@/utils/preview";
 
 import "./page.css";
 
@@ -25,48 +24,52 @@ function Field({ label, labelFor, children, helperText }) {
 
 export default function Home() {
   const [bgPhoto, setBgPhoto] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [hasPreview, setHasPreview] = useState(null);
+  const [numberInputs, setNumberInputs] = useState({
+    textX: 1754,
+    textY: 1240,
+    fontSize: 75,
+  });
   const formRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  const generatePreview = useCallback(async function () {
-    if (formRef.current) {
-      const { bgPhoto, fontSize, textX, textY } = Object.fromEntries(
-        new FormData(formRef.current).entries()
-      );
-
-      if (bgPhoto?.size && fontSize && textX && textY) {
-        setPreviewLoading(true);
-
-        try {
-          const preview = await generatePreviewImg({ bgPhoto, fontSize, textX, textY });
-          setPreview(preview);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setPreviewLoading(false);
-        }
-      }
+  useLayoutEffect(() => {
+    function _generatePreview() {
+      const updatePreview = () =>
+        generatePreview(canvasRef.current, { bgPhoto, ...numberInputs }, setHasPreview);
+      requestAnimationFrame(updatePreview);
     }
-  }, []);
 
-  useEffect(() => {
-    const form = formRef.current;
-
-    if (form) {
-      form.addEventListener("change", generatePreview);
-    }
-    return () => {
-      if (form) {
-        form.removeEventListener("change", generatePreview);
-      }
-    };
-  }, [generatePreview]);
+    window.addEventListener("resize", _generatePreview);
+    return () => window.removeEventListener("resize", _generatePreview);
+  }, [bgPhoto, numberInputs]);
 
   function onChangeBgPhoto(event) {
     const url = URL.createObjectURL(event.target.files[0]);
     setBgPhoto(url);
+
+    const updatePreview = () =>
+      generatePreview(canvasRef.current, { bgPhoto: url, ...numberInputs }, setHasPreview);
+    requestAnimationFrame(updatePreview);
   }
+
+  const onChangeNumberInput = (event) => {
+    const { name, value } = event.target;
+
+    setNumberInputs((prev) => {
+      const newValues = {
+        ...prev,
+        [name]: Number(value),
+      };
+
+      const updatePreview = () =>
+        generatePreview(canvasRef.current, { bgPhoto, ...newValues }, setHasPreview);
+
+      requestAnimationFrame(updatePreview);
+
+      return newValues;
+    });
+  };
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -100,7 +103,7 @@ export default function Home() {
       />
 
       <main className="flex justify-center items-center p-16">
-        <form onSubmit={onSubmit} ref={formRef}>
+        <form className="w-full h-full" onSubmit={onSubmit} ref={formRef}>
           <div className="container flex flex-col mx-auto">
             <Field label="Download as:" labelFor="type">
               <div>
@@ -178,11 +181,12 @@ export default function Home() {
                 name="textX"
                 type="number"
                 accept=".png, .jpg"
-                defaultValue={1754}
+                defaultValue={numberInputs.textX}
                 min={0}
                 max={Number.MAX_SAFE_INTEGER}
                 step={1}
                 required
+                onChange={onChangeNumberInput}
               />
             </Field>
 
@@ -193,11 +197,12 @@ export default function Home() {
                 name="textY"
                 type="number"
                 accept=".png, .jpg"
-                defaultValue={1240}
+                defaultValue={numberInputs.textY}
                 min={0}
                 max={Number.MAX_SAFE_INTEGER}
                 step={1}
                 required
+                onChange={onChangeNumberInput}
               />
             </Field>
 
@@ -208,31 +213,21 @@ export default function Home() {
                 name="fontSize"
                 type="number"
                 accept=".png, .jpg"
-                defaultValue={75}
+                defaultValue={numberInputs.fontSize}
                 min={1}
                 max={Number.MAX_SAFE_INTEGER}
                 step={1}
                 required
+                onChange={onChangeNumberInput}
               />
             </Field>
 
-            <div className="w-full h-60 bg-gray-50">
-              {previewLoading && (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="loader-1">
-                    <span></span>
-                  </div>
+            <div className="canvas-container w-full h-auto bg-gray-50 relative">
+              <canvas className="w-full h-full" ref={canvasRef} />
+              {!hasPreview && (
+                <div className="absolute inset-0 border rounded italic uppercase flex items-center justify-center text-gray-400">
+                  Preview
                 </div>
-              )}
-              {!previewLoading && (
-                <>
-                  {preview && <img className="w-full h-full object-contain" src={preview} />}
-                  {!preview && (
-                    <div className="w-full h-full border rounded italic uppercase flex items-center justify-center text-gray-400">
-                      Preview
-                    </div>
-                  )}
-                </>
               )}
             </div>
 

@@ -1,47 +1,47 @@
-import { readAsDataURL } from "./data-url";
+import { PAGE_HEIGHT, PAGE_WIDTH } from "./page-size";
 
-const { attachImage } = require("./png");
+export function generatePreview(canvas, { bgPhoto, fontSize, textX, textY }, successCb) {
+  if (
+    canvas &&
+    bgPhoto &&
+    typeof fontSize === "number" &&
+    typeof textX === "number" &&
+    typeof textY === "number"
+  ) {
+    const computedStyles = getComputedStyle(canvas);
+    const canvasWidth = parseInt(computedStyles.width, 10);
+    const canvasHeight = parseInt(computedStyles.height, 10);
 
-export const generatePreviewImg = ({ bgPhoto, fontSize: _fontSize, textX, textY }) =>
-  new Promise(async (resolve, reject) => {
-    const pageWidth = 3508;
-    const pageHeight = 2480;
+    const scale = canvasWidth / PAGE_WIDTH;
+    const scaledFontSize = fontSize * scale;
+    const scaledTextX = textX * scale;
+    const scaledTextY = textY * scale;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = pageWidth;
-    canvas.height = pageHeight;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     const ctx = canvas.getContext("2d");
 
     // set background
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add bg photo
-    await attachImage(ctx, {
-      src: await readAsDataURL(bgPhoto),
-      width: pageWidth,
-      height: pageHeight,
-      left: 0,
-      top: 0,
-    });
+    // Add image
+    const image = new Image();
+    image.src = bgPhoto;
+    image.width = canvasWidth;
+    image.height = canvasHeight;
+    image.onload = () => {
+      ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
 
-    // Add text
-    const fontSize = `${_fontSize}px`;
-    const fontFamily = "Arial";
-    ctx.font = [fontSize, fontFamily].join(" ");
-    ctx.fillStyle = "#000";
-    ctx.textAlign = "center";
-    ctx.fillText("Juan dela Cruz", textX, textY);
+      // Add text
+      ctx.font = `${scaledFontSize}px Arial`;
+      ctx.fillStyle = "#000";
+      ctx.textAlign = "center";
+      ctx.fillText("Juan dela Cruz", scaledTextX, scaledTextY);
+    };
 
-    // Create image from canvas
-    const img = new Image();
-    img.src = canvas.toDataURL("image/png", 1.0);
-    img.width = canvas.width;
-    img.height = canvas.height;
-
-    img.addEventListener("load", function () {
-      resolve(img.src);
-    });
-
-    img.addEventListener("error", reject);
-  });
+    successCb?.(true);
+    return;
+  }
+  successCb?.(false);
+}

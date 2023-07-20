@@ -41,7 +41,7 @@
 } */
 
 /* Loader 1 */
-.loader-1 {
+/* .loader-1 {
   height: 32px;
   width: 32px;
   animation: loader-1-1 4.8s linear infinite;
@@ -103,4 +103,8 @@
   100% {
     transform: rotate(140deg);
   }
+} */
+
+.canvas-container {
+  aspect-ratio: 877 / 620;
 }
