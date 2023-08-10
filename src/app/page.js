@@ -7,6 +7,7 @@ import Papa from "papaparse";
 import { download } from "@/utils/download";
 import { readAsDataURL } from "@/utils/data-url";
 import { generatePreview } from "@/utils/preview";
+import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
 
 import "./page.css";
 
