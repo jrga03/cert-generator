@@ -22,15 +22,17 @@ function Field({ label, labelFor, children, helperText }) {
   );
 }
 
+const DEFAULT_FONT_SIZE = 75;
+
 export default function Home() {
   const [bgPhoto, setBgPhoto] = useState(null);
   const [hasPreview, setHasPreview] = useState(null);
   const [numberInputs, setNumberInputs] = useState({
-    textX: 1754,
-    textY: 1240,
-    orgTextX: 1754,
-    orgTextY: 1440,
-    fontSize: 75,
+    textX: PAGE_WIDTH / 2,
+    textY: PAGE_HEIGHT / 2,
+    orgTextX: PAGE_WIDTH / 2,
+    orgTextY: PAGE_HEIGHT / 2 + DEFAULT_FONT_SIZE,
+    fontSize: DEFAULT_FONT_SIZE,
   });
   const formRef = useRef(null);
   const canvasRef = useRef(null);
