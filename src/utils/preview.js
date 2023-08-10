@@ -1,6 +1,10 @@
 import { PAGE_HEIGHT, PAGE_WIDTH } from "./page-size";
 
-export function generatePreview(canvas, { bgPhoto, fontSize, textX, textY }, successCb) {
+export function generatePreview(
+  canvas,
+  { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY },
+  successCb
+) {
   if (
     canvas &&
     bgPhoto &&
@@ -16,6 +20,8 @@ export function generatePreview(canvas, { bgPhoto, fontSize, textX, textY }, suc
     const scaledFontSize = fontSize * scale;
     const scaledTextX = textX * scale;
     const scaledTextY = textY * scale;
+    const scaledOrgTextX = orgTextX * scale;
+    const scaledOrgTextY = orgTextY * scale;
 
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -33,11 +39,15 @@ export function generatePreview(canvas, { bgPhoto, fontSize, textX, textY }, suc
     image.onload = () => {
       ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
 
-      // Add text
       ctx.font = `${scaledFontSize}px Arial`;
       ctx.fillStyle = "#000";
       ctx.textAlign = "center";
+
+      // Add text
       ctx.fillText("Juan dela Cruz", scaledTextX, scaledTextY);
+
+      // Add org text
+      ctx.fillText("Organization", scaledOrgTextX, scaledOrgTextY);
     };
 
     successCb?.(true);

@@ -6,6 +6,18 @@ function pixelsToPoints(pixel) {
   return (pixel * 72) / 300;
 }
 
+function measureTextWidth(text, fontSize, fontFamily) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = fontSize + "px " + fontFamily;
+  return context.measureText(text).width;
+}
+
+function getLargestWidth(data, fontSize, fontFamily) {
+  const widths = data.map((item) => measureTextWidth(item, fontSize, fontFamily));
+  return Math.max(...widths);
+}
+
 /**
  * @param {PDFKit.PDFDocument} pdfDoc
  * @param {string} name Font name
@@ -45,14 +57,17 @@ const loadFont = (pdfDoc, name, type, url) =>
  * Construct PDF Document
  * @param {{
  *   names: string[],
+ *   orgs: string[],
  *   img: string,
  *   fontSize: number,
  *   textX: number,
  *   textY: number,
+ *   orgTextX: number,
+ *   orgTextY: number,
  * }} data
  * @returns {Promise<Blob>}
  */
-const constructPDF = ({ names, img, fontSize, textY }) =>
+const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY }) =>
   new Promise(async (resolve, reject) => {
     const pageWidth = pixelsToPoints(PAGE_WIDTH);
     const pageHeight = pixelsToPoints(PAGE_HEIGHT);
@@ -73,11 +88,14 @@ const constructPDF = ({ names, img, fontSize, textY }) =>
     // pipe the document to a blob
     const stream = doc.pipe(blobStream());
 
+    const fontSizePt = pixelsToPoints(fontSize);
+    const largestNameWidth = getLargestWidth(names, fontSizePt, "Arial");
+    const largestOrgWidth = getLargestWidth(orgs, fontSizePt, "Arial");
+
     /**
      * Start of PDF content
      */
-
-    for (const name of names) {
+    for (const [index, name] of names.entries()) {
       // Add page to the document
       doc.addPage();
 
@@ -89,14 +107,38 @@ const constructPDF = ({ names, img, fontSize, textY }) =>
         height: pageHeight,
       });
 
+      // Add text
+      doc
+        .font("Arial")
+        .fontSize(fontSizePt)
+        .strokeColor("#000")
+        .fillColor("#000")
+        .text(
+          name,
+          pixelsToPoints(textX) - largestNameWidth / 2,
+          pixelsToPoints(textY - fontSize),
+          {
+            align: "center",
+            width: largestNameWidth,
+          }
+        );
+
+      const org = orgs[index];
+      // Add org text
       doc
         .font("Arial")
         .fontSize(pixelsToPoints(fontSize))
         .strokeColor("#000")
         .fillColor("#000")
-        .text(name, 0, pixelsToPoints(textY - fontSize), {
-          align: "center",
-        });
+        .text(
+          org,
+          pixelsToPoints(orgTextX) - largestOrgWidth / 2,
+          pixelsToPoints(orgTextY - fontSize),
+          {
+            align: "center",
+            width: largestOrgWidth,
+          }
+        );
     }
     /**
      * End of PDF content

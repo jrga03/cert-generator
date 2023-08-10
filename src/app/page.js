@@ -12,7 +12,7 @@ import "./page.css";
 
 function Field({ label, labelFor, children, helperText }) {
   return (
-    <div className="flex flex-col mb-6 select-none">
+    <div className="flex flex-col flex-1 mb-6 select-none">
       <label htmlFor={labelFor} className="mb-2 font-bold text-lg text-gray-900">
         {label}
         {helperText}
@@ -28,6 +28,8 @@ export default function Home() {
   const [numberInputs, setNumberInputs] = useState({
     textX: 1754,
     textY: 1240,
+    orgTextX: 1754,
+    orgTextY: 1440,
     fontSize: 75,
   });
   const formRef = useRef(null);
@@ -82,10 +84,12 @@ export default function Home() {
       skipEmptyLines: true,
       complete: async (res) => {
         const names = res.data.slice(1).map((row) => row[0]);
+        const orgs = res.data.slice(1).map((row) => row[1]);
 
         const data = {
           ...entries,
           names,
+          orgs,
           img,
           separate: entries.separate === "on",
         };
@@ -166,45 +170,69 @@ export default function Home() {
               </div>
             </div>
 
-            <Field
-              label="Text X"
-              labelFor="textX"
-              helperText={
-                <span className="text-base font-normal ml-1 italic text-gray-900">
-                  (for PNG only)
-                </span>
-              }
-            >
-              <input
-                className="border px-2 py-1 rounded"
-                id="textX"
-                name="textX"
-                type="number"
-                accept=".png, .jpg"
-                defaultValue={numberInputs.textX}
-                min={0}
-                max={Number.MAX_SAFE_INTEGER}
-                step={1}
-                required
-                onChange={onChangeNumberInput}
-              />
-            </Field>
+            <div className="flex justify-between items-center gap-4">
+              <Field label="Text X" labelFor="textX">
+                <input
+                  className="border px-2 py-1 rounded"
+                  id="textX"
+                  name="textX"
+                  type="number"
+                  defaultValue={numberInputs.textX}
+                  min={0}
+                  max={Number.MAX_SAFE_INTEGER}
+                  step={1}
+                  required
+                  onChange={onChangeNumberInput}
+                />
+              </Field>
 
-            <Field label="Text Y" labelFor="textY">
-              <input
-                className="border px-2 py-1 rounded"
-                id="textY"
-                name="textY"
-                type="number"
-                accept=".png, .jpg"
-                defaultValue={numberInputs.textY}
-                min={0}
-                max={Number.MAX_SAFE_INTEGER}
-                step={1}
-                required
-                onChange={onChangeNumberInput}
-              />
-            </Field>
+              <Field label="Text Y" labelFor="textY">
+                <input
+                  className="border px-2 py-1 rounded"
+                  id="textY"
+                  name="textY"
+                  type="number"
+                  defaultValue={numberInputs.textY}
+                  min={0}
+                  max={Number.MAX_SAFE_INTEGER}
+                  step={1}
+                  required
+                  onChange={onChangeNumberInput}
+                />
+              </Field>
+            </div>
+
+            <div className="flex justify-between items-center gap-4">
+              <Field label="Org Text X" labelFor="orgTextX">
+                <input
+                  className="border px-2 py-1 rounded"
+                  id="orgTextX"
+                  name="orgTextX"
+                  type="number"
+                  defaultValue={numberInputs.orgTextX}
+                  min={0}
+                  max={Number.MAX_SAFE_INTEGER}
+                  step={1}
+                  required
+                  onChange={onChangeNumberInput}
+                />
+              </Field>
+
+              <Field label="Org Text Y" labelFor="orgTextY">
+                <input
+                  className="border px-2 py-1 rounded"
+                  id="orgTextY"
+                  name="orgTextY"
+                  type="number"
+                  defaultValue={numberInputs.orgTextY}
+                  min={0}
+                  max={Number.MAX_SAFE_INTEGER}
+                  step={1}
+                  required
+                  onChange={onChangeNumberInput}
+                />
+              </Field>
+            </div>
 
             <Field label="Font size" labelFor="fontSize">
               <input
@@ -212,7 +240,6 @@ export default function Home() {
                 id="fontSize"
                 name="fontSize"
                 type="number"
-                accept=".png, .jpg"
                 defaultValue={numberInputs.fontSize}
                 min={1}
                 max={Number.MAX_SAFE_INTEGER}

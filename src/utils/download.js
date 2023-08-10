@@ -7,15 +7,18 @@ import { downloadPDF } from "./pdf";
  * @param {{
  *   type: "pdf" | "png",
  *   names: string[],
+ *   orgs: string[],
  *   img: string,
  *   fontSize: number,
  *   textX: number,
  *   textY: number,
+ *   orgTextX: number,
+ *   orgTextY: number,
  *   separate: boolean,
  * }} data
  */
 export async function download(data) {
-  const { type, names, separate } = data;
+  const { type, names, orgs, separate } = data;
 
   switch (type) {
     case "pdf": {
@@ -23,8 +26,12 @@ export async function download(data) {
         // create zip
         const zip = new JSZip();
 
-        for (const name of names) {
-          const pdf = await downloadPDF({ ...data, names: [name] });
+        for (const [index, name] of names.entries()) {
+          const pdf = await downloadPDF({
+            ...data,
+            names: [name],
+            orgs: [orgs[index]],
+          });
 
           const fileName = `${name}.pdf`;
           // Add image to zip

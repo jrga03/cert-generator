@@ -42,7 +42,18 @@ export const attachImage = (ctx, { src, width, height, left, top }) =>
  */
 const addPageToZip = (
   zip,
-  { name, pageWidth, pageHeight, img: src, fontSize: _fontSize, textX, textY },
+  {
+    name,
+    org,
+    pageWidth,
+    pageHeight,
+    img: src,
+    fontSize: _fontSize,
+    textX,
+    textY,
+    orgTextX,
+    orgTextY,
+  },
   mime
 ) =>
   new Promise(async (resolve, reject) => {
@@ -64,13 +75,16 @@ const addPageToZip = (
       top: 0,
     });
 
-    // Add text
     const fontSize = `${_fontSize}px`;
     const fontFamily = "Arial";
     ctx.font = [fontSize, fontFamily].join(" ");
     ctx.fillStyle = "#000";
     ctx.textAlign = "center";
+
+    // Add text
     ctx.fillText(name, textX, textY);
+    // Add org text
+    ctx.fillText(org, orgTextX, orgTextY);
 
     // Create image from canvas
     const img = new Image();
@@ -94,14 +108,20 @@ const addPageToZip = (
  * @param {"image/png"|"image/jpeg"} mime
  * @param {{
  *   names: string[],
+ *   orgs: string[],
  *   img: string,
  *   fontSize: number,
  *   textX: number,
  *   textY: number,
+ *   orgTextX: number,
+ *   orgTextY: number,
  * }} data
  * @returns {Blob}
  */
-const constructZip = async (mime, { names, img, fontSize, textX, textY }) => {
+const constructZip = async (
+  mime,
+  { names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY }
+) => {
   const pageWidth = PAGE_WIDTH;
   const pageHeight = PAGE_HEIGHT;
 
@@ -111,15 +131,18 @@ const constructZip = async (mime, { names, img, fontSize, textX, textY }) => {
   /**
    * Start of zip content
    */
-  for (const name of names) {
+  for (const [index, name] of names.entries()) {
     const pageData = {
       name,
+      org: orgs[index],
       pageWidth,
       pageHeight,
       img,
       fontSize,
       textX,
       textY,
+      orgTextX,
+      orgTextY,
     };
 
     await addPageToZip(zip, pageData, mime);
