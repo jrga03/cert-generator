@@ -16,7 +16,7 @@ export function generatePreview(
     const canvasWidth = parseInt(computedStyles.width, 10);
     const canvasHeight = parseInt(computedStyles.height, 10);
 
-    const scale = canvasWidth / PAGE_WIDTH;
+    const scale = Math.min(canvasWidth / PAGE_WIDTH, canvasHeight / PAGE_HEIGHT);
     const scaledFontSize = fontSize * scale;
     const scaledTextX = textX * scale;
     const scaledTextY = textY * scale;
