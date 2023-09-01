@@ -89,8 +89,8 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
     const stream = doc.pipe(blobStream());
 
     const fontSizePt = pixelsToPoints(fontSize);
-    const largestNameWidth = getLargestWidth(names, fontSizePt, "Arial");
-    const largestOrgWidth = getLargestWidth(orgs, fontSizePt, "Arial");
+    const largestNameWidth = getLargestWidth(names, fontSize, "Arial");
+    const largestOrgWidth = getLargestWidth(orgs, fontSize, "Arial");
 
     /**
      * Start of PDF content
@@ -115,11 +115,11 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
         .fillColor("#000")
         .text(
           name,
-          pixelsToPoints(textX) - largestNameWidth / 2,
+          pixelsToPoints(textX - largestNameWidth / 2),
           pixelsToPoints(textY - fontSize),
           {
             align: "center",
-            width: largestNameWidth,
+            width: pixelsToPoints(largestNameWidth),
           }
         );
 
@@ -132,11 +132,11 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
         .fillColor("#000")
         .text(
           org,
-          pixelsToPoints(orgTextX) - largestOrgWidth / 2,
+          pixelsToPoints(orgTextX - largestOrgWidth / 2),
           pixelsToPoints(orgTextY - fontSize),
           {
             align: "center",
-            width: largestOrgWidth,
+            width: pixelsToPoints(largestOrgWidth),
           }
         );
     }
