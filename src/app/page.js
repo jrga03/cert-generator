@@ -265,7 +265,7 @@ export default function Home() {
         strategy="lazyOnload"
       />
 
-      <main className="container mx-auto p-6 lg:p-10">
+      <main className="container mx-auto p-6 lg:p-10 lg:h-screen lg:overflow-hidden lg:flex lg:flex-col">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold tracking-tight">Certificate Generator</h1>
           <p className="text-sm text-muted-foreground">
@@ -273,8 +273,13 @@ export default function Home() {
           </p>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,480px)_1fr]">
-          <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,480px)_1fr] lg:flex-1 lg:min-h-0">
+          <form
+            ref={formRef}
+            onSubmit={onSubmit}
+            className="space-y-6 lg:flex lg:flex-col lg:h-full lg:min-h-0 lg:space-y-0"
+          >
+            <div className="space-y-6 lg:flex-1 lg:overflow-y-auto lg:min-h-0 lg:pr-2 lg:pb-2">
             <Card>
               <CardHeader><CardTitle>Output</CardTitle></CardHeader>
               <CardContent className="space-y-4">
@@ -459,12 +464,19 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Button type="submit" size="lg" disabled={isGenerating} className="w-full">
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isGenerating}
+              className="w-full lg:mt-8"
+            >
               {isGenerating ? "Generating…" : "Generate"}
             </Button>
           </form>
 
-          <aside className="lg:sticky lg:top-6 self-start space-y-2">
+          <aside className="self-start space-y-2">
             <Card>
               <CardContent className="p-4">
                 <div className="aspect-[1.7] w-full bg-muted relative">
