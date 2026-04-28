@@ -16,22 +16,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
-
-function Field({ label, labelFor, children, helperText }) {
-  return (
-    <div className="flex flex-col flex-1 mb-6 select-none">
-      <label htmlFor={labelFor} className="mb-2 font-bold text-lg text-gray-900">
-        {label}
-        {helperText}
-      </label>
-      {children}
-    </div>
-  );
-}
 
 const DEFAULT_FONT_SIZE = 75;
 
@@ -470,16 +459,9 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <button
-              type="submit"
-              disabled={isGenerating}
-              className={
-                "mt-8 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed " +
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              }
-            >
+            <Button type="submit" size="lg" disabled={isGenerating} className="w-full">
               {isGenerating ? "Generating…" : "Generate"}
-            </button>
+            </Button>
           </form>
 
           <aside className="lg:sticky lg:top-6 self-start space-y-2">
