@@ -6,35 +6,27 @@ import { downloadPDF } from "./pdf";
 /**
  * @param {{
  *   type: "pdf" | "png",
- *   names: string[],
- *   orgs: string[],
+ *   elements: Array<{id: string, columnIndex: number, label: string, x: number, y: number, fontSize: number|null}>,
+ *   globalFontSize: number,
+ *   rows: string[][],
  *   img: string,
- *   fontSize: number,
- *   textX: number,
- *   textY: number,
- *   orgTextX: number,
- *   orgTextY: number,
  *   separate: boolean,
  * }} data
  */
 export async function download(data, onProgress) {
-  const { type, names, orgs, separate } = data;
+  const { type, separate, rows } = data;
 
   switch (type) {
     case "pdf": {
       if (separate) {
         const zip = new JSZip();
 
-        for (const [index, name] of names.entries()) {
-          const pdf = await downloadPDF({
-            ...data,
-            names: [name],
-            orgs: [orgs[index]],
-          });
-
-          const fileName = `${name}.pdf`;
+        for (const [index, row] of rows.entries()) {
+          const pdf = await downloadPDF({ ...data, rows: [row] });
+          const baseName = (row[0] && String(row[0]).trim()) || `cert-${index + 1}`;
+          const fileName = `${baseName}.pdf`;
           zip.file(fileName, pdf);
-          onProgress?.(index + 1, names.length);
+          onProgress?.(index + 1, rows.length);
         }
 
         const blob = await zip.generateAsync({ type: "blob" });
