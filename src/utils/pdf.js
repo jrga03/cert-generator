@@ -54,20 +54,14 @@ const loadFont = (pdfDoc, name, type, url) =>
   });
 
 /**
- * Construct PDF Document
  * @param {{
- *   names: string[],
- *   orgs: string[],
+ *   elements: Array<{id, columnIndex, label, x, y, fontSize: number|null}>,
+ *   globalFontSize: number,
+ *   rows: string[][],
  *   img: string,
- *   fontSize: number,
- *   textX: number,
- *   textY: number,
- *   orgTextX: number,
- *   orgTextY: number,
  * }} data
- * @returns {Promise<Blob>}
  */
-const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY }, onProgress) =>
+const constructPDF = ({ elements, globalFontSize, rows, img }, onProgress) =>
   new Promise(async (resolve, reject) => {
     const pageWidth = pixelsToPoints(PAGE_WIDTH);
     const pageHeight = pixelsToPoints(PAGE_HEIGHT);
@@ -77,29 +71,22 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
       size: [pageHeight, pageWidth],
       margin: 0,
       autoFirstPage: false,
-      info: undefined, // document metadata. See https://pdfkit.org/docs/getting_started.html#setting_document_metadata
+      info: undefined,
     };
 
-    // create document
     const doc = new window.PDFDocument(options);
-
     await loadFont(doc, "Arial", "ttf", "/arial.ttf");
-
-    // pipe the document to a blob
     const stream = doc.pipe(blobStream());
 
-    const fontSizePt = pixelsToPoints(fontSize);
-    const largestNameWidth = getLargestWidth(names, fontSize, "Arial");
-    const largestOrgWidth = getLargestWidth(orgs, fontSize, "Arial");
+    // Hoisted: per-element max width (depends on font + column data, not the row)
+    const elementWidthsPx = elements.map((el) => {
+      const fontSizePx = el.fontSize ?? globalFontSize;
+      const colValues = rows.map((r) => r[el.columnIndex] ?? "");
+      return getLargestWidth(colValues, fontSizePx, "Arial");
+    });
 
-    /**
-     * Start of PDF content
-     */
-    for (const [index, name] of names.entries()) {
-      // Add page to the document
+    for (const [rowIndex, row] of rows.entries()) {
       doc.addPage();
-
-      // Add image to the page
       doc.image(img, 0, 0, {
         align: "center",
         valign: "center",
@@ -107,62 +94,43 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
         height: pageHeight,
       });
 
-      // Add text
-      doc
-        .font("Arial")
-        .fontSize(fontSizePt)
-        .strokeColor("#000")
-        .fillColor("#000")
-        .text(
-          name,
-          pixelsToPoints(textX - largestNameWidth / 2),
-          pixelsToPoints(textY - fontSize),
-          {
-            align: "center",
-            width: pixelsToPoints(largestNameWidth),
-          }
-        );
+      for (const [i, el] of elements.entries()) {
+        const fontSizePx = el.fontSize ?? globalFontSize;
+        const fontSizePt = pixelsToPoints(fontSizePx);
+        const widthPx = elementWidthsPx[i];
+        const cell = row[el.columnIndex] ?? "";
 
-      const org = orgs[index];
-      // Add org text
-      doc
-        .font("Arial")
-        .fontSize(pixelsToPoints(fontSize))
-        .strokeColor("#000")
-        .fillColor("#000")
-        .text(
-          org,
-          pixelsToPoints(orgTextX - largestOrgWidth / 2),
-          pixelsToPoints(orgTextY - fontSize),
-          {
-            align: "center",
-            width: pixelsToPoints(largestOrgWidth),
-          }
-        );
+        doc
+          .font("Arial")
+          .fontSize(fontSizePt)
+          .strokeColor("#000")
+          .fillColor("#000")
+          .text(
+            cell,
+            pixelsToPoints(el.x - widthPx / 2),
+            pixelsToPoints(el.y - fontSizePx),
+            {
+              align: "center",
+              width: pixelsToPoints(widthPx),
+            }
+          );
+      }
 
-      onProgress?.(index + 1, names.length);
+      onProgress?.(rowIndex + 1, rows.length);
     }
-    /**
-     * End of PDF content
-     */
 
     doc.end();
-    stream.on("finish", function () {
-      const blob = stream.toBlob("application/pdf");
-      resolve(blob);
-    });
-
+    stream.on("finish", () => resolve(stream.toBlob("application/pdf")));
     stream.on("error", reject);
   });
 
 /**
  * @param {{
- *   names: string[],
+ *   elements: Array<{id, columnIndex, label, x, y, fontSize: number|null}>,
+ *   globalFontSize: number,
+ *   rows: string[][],
  *   img: string,
- *   fontSize: number,
- *   textX: number,
- *   textY: number,
- * }[]} data
+ * }} data
  */
 export async function downloadPDF(data, onProgress) {
   return constructPDF(data, onProgress);
