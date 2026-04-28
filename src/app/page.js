@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
 
@@ -314,67 +316,56 @@ export default function Home() {
             <Card>
               <CardHeader><CardTitle>Data</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Field
-                  label={
-                    <div>
-                      <label htmlFor="names">Names (.csv) </label>
-                      <a
-                        className="text-xs text-blue-400 underline italic"
-                        href="/sample_names.csv"
-                        download
-                      >
-                        Download Sample
-                      </a>
-                    </div>
-                  }
-                >
-                  <input
-                    id="names"
-                    name="names"
-                    type="file"
-                    accept=".csv"
-                    required
-                    onChange={onChangeCsv}
-                  />
-                  {csvError && <p className="mt-1 text-sm text-red-600">{csvError}</p>}
-                </Field>
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <Label htmlFor="names">Names (.csv)</Label>
+                    <a className="text-xs text-primary underline italic" href="/sample_names.csv" download>
+                      Download sample
+                    </a>
+                  </div>
+                  <Input id="names" name="names" type="file" accept=".csv" required onChange={onChangeCsv} />
+                  {csvError && <p className="text-sm text-destructive">{csvError}</p>}
+                </div>
 
-                <div className="flex flex-row gap-4">
-                  <Field label="Background photo (.png, .jpg)" labelFor="bgPhoto">
-                    <input
+                <div className="space-y-2">
+                  <Label htmlFor="bgPhoto">Background photo (.png, .jpg)</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
                       id="bgPhoto"
                       name="bgPhoto"
                       type="file"
                       accept=".png, .jpg"
                       required
                       onChange={onChangeBgPhoto}
+                      className="flex-1"
                     />
-                  </Field>
-
-                  <div className="w-20 h-20">
-                    {bgPhoto && <img className="w-full h-full object-contain" src={bgPhoto} alt="" />}
+                    <div className="w-16 h-16 rounded border bg-muted overflow-hidden flex-shrink-0">
+                      {bgPhoto && <img className="w-full h-full object-contain" src={bgPhoto} alt="" />}
+                    </div>
                   </div>
                 </div>
 
                 {csvRows && csvRows.length > 0 && (
-                  <Field label="Preview row" labelFor="previewRow">
-                    <select
-                      id="previewRow"
-                      className="border px-2 py-1 rounded"
-                      value={previewRowIndex}
-                      onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
+                  <div className="space-y-2">
+                    <Label htmlFor="previewRow">Preview row</Label>
+                    <Select
+                      value={String(previewRowIndex)}
+                      onValueChange={(v) => setPreviewRowIndex(Number(v))}
                     >
-                      {csvRows.map((row, i) => {
-                        const label = row.filter(Boolean).join(" — ");
-                        const truncated = label.length > 60 ? label.slice(0, 57) + "…" : label;
-                        return (
-                          <option key={i} value={i}>
-                            {truncated || `Row ${i + 1}`}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </Field>
+                      <SelectTrigger id="previewRow"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {csvRows.map((row, i) => {
+                          const label = row.filter(Boolean).join(" — ");
+                          const truncated = label.length > 60 ? label.slice(0, 57) + "…" : label;
+                          return (
+                            <SelectItem key={i} value={String(i)}>
+                              {truncated || `Row ${i + 1}`}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </CardContent>
             </Card>
