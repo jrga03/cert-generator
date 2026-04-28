@@ -1,8 +1,5 @@
 import { PAGE_HEIGHT, PAGE_WIDTH } from "./page-size";
 
-const FALLBACK_NAME = "Juan dela Cruz";
-const FALLBACK_ORG = "Organization";
-
 const imageCache = new Map();
 
 function getCachedImage(src) {
@@ -17,16 +14,15 @@ function getCachedImage(src) {
 
 export function generatePreview(
   canvas,
-  { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY, nameText, orgText, selectedElement },
+  { bgPhoto, globalFontSize, elements, rowCells, selectedElementId },
   successCb,
   boxesRef
 ) {
   if (
     !canvas ||
     !bgPhoto ||
-    typeof fontSize !== "number" ||
-    typeof textX !== "number" ||
-    typeof textY !== "number"
+    typeof globalFontSize !== "number" ||
+    !Array.isArray(elements)
   ) {
     successCb?.(false);
     return;
@@ -37,12 +33,6 @@ export function generatePreview(
   const canvasHeight = parseInt(computedStyles.height, 10);
 
   const scale = Math.min(canvasWidth / PAGE_WIDTH, canvasHeight / PAGE_HEIGHT);
-  const scaledFontSize = fontSize * scale;
-  const scaledTextX = textX * scale;
-  const scaledTextY = textY * scale;
-  const scaledOrgTextX = orgTextX * scale;
-  const scaledOrgTextY = orgTextY * scale;
-
   const image = getCachedImage(bgPhoto);
 
   function draw() {
@@ -50,50 +40,41 @@ export function generatePreview(
     if (canvas.height !== canvasHeight) canvas.height = canvasHeight;
 
     const ctx = canvas.getContext("2d");
-
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
 
-    ctx.font = `${scaledFontSize}px Arial`;
     ctx.fillStyle = "#000";
     ctx.textAlign = "center";
 
-    const drawnName = nameText || FALLBACK_NAME;
-    const drawnOrg = orgText || FALLBACK_ORG;
+    const boxes = { scale };
 
-    ctx.fillText(drawnName, scaledTextX, scaledTextY);
-    ctx.fillText(drawnOrg, scaledOrgTextX, scaledOrgTextY);
+    for (const el of elements) {
+      const fontSize = (el.fontSize ?? globalFontSize) * scale;
+      ctx.font = `${fontSize}px Arial`;
 
-    const nameMetrics = ctx.measureText(drawnName);
-    const orgMetrics = ctx.measureText(drawnOrg);
-    const nameAscent = nameMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
-    const nameDescent = nameMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
-    const orgAscent = orgMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
-    const orgDescent = orgMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
+      const cell = rowCells?.[el.columnIndex];
+      const text = (cell != null && cell !== "") ? cell : el.label;
 
-    const boxes = {
-      name: {
-        x: scaledTextX - nameMetrics.width / 2,
-        y: scaledTextY - nameAscent,
-        width: nameMetrics.width,
-        height: nameAscent + nameDescent,
-      },
-      org: {
-        x: scaledOrgTextX - orgMetrics.width / 2,
-        y: scaledOrgTextY - orgAscent,
-        width: orgMetrics.width,
-        height: orgAscent + orgDescent,
-      },
-      scale,
-    };
+      const x = el.x * scale;
+      const y = el.y * scale;
+      ctx.fillText(text, x, y);
 
-    if (boxesRef) {
-      boxesRef.current = boxes;
+      const m = ctx.measureText(text);
+      const ascent = m.actualBoundingBoxAscent ?? fontSize * 0.8;
+      const descent = m.actualBoundingBoxDescent ?? fontSize * 0.2;
+      boxes[el.id] = {
+        x: x - m.width / 2,
+        y: y - ascent,
+        width: m.width,
+        height: ascent + descent,
+      };
     }
 
-    if (selectedElement && boxes[selectedElement]) {
-      const b = boxes[selectedElement];
+    if (boxesRef) boxesRef.current = boxes;
+
+    if (selectedElementId && boxes[selectedElementId]) {
+      const b = boxes[selectedElementId];
       ctx.save();
       ctx.strokeStyle = "#4f46e5";
       ctx.lineWidth = 2;
