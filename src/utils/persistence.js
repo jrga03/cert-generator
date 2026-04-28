@@ -25,3 +25,16 @@ export function saveSettings(data) {
     // quota errors etc — ignore
   }
 }
+
+export function migrateLoadedSettings(saved) {
+  if (saved == null) return null;
+  const out = {};
+  if (typeof saved.globalFontSize === "number") {
+    out.globalFontSize = saved.globalFontSize;
+  } else if (typeof saved.numberInputs?.fontSize === "number") {
+    out.globalFontSize = saved.numberInputs.fontSize;
+  }
+  if (saved.outputType) out.outputType = saved.outputType;
+  if (typeof saved.separate === "boolean") out.separate = saved.separate;
+  return out;
+}
