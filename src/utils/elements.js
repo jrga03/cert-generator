@@ -12,3 +12,7 @@ export function buildDefaultElements(headers) {
     fontSize: null,
   }));
 }
+
+export function updateElement(elements, id, patch) {
+  return elements.map(el => el.id === id ? { ...el, ...patch } : el);
+}

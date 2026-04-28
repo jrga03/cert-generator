@@ -1,4 +1,4 @@
-import { buildDefaultElements } from "./elements";
+import { buildDefaultElements, updateElement } from "./elements";
 import { PAGE_WIDTH, PAGE_HEIGHT } from "./page-size";
 
 const DEFAULT_FONT_SIZE = 75;
@@ -28,5 +28,33 @@ describe("buildDefaultElements", () => {
   it("initializes fontSize to null (inherit global)", () => {
     const [el] = buildDefaultElements(["Name"]);
     expect(el.fontSize).toBeNull();
+  });
+});
+
+describe("updateElement", () => {
+  const elements = [
+    { id: "el-0", columnIndex: 0, label: "Name", x: 10, y: 20, fontSize: null },
+    { id: "el-1", columnIndex: 1, label: "Org",  x: 30, y: 40, fontSize: 60   },
+  ];
+
+  it("patches matching element only", () => {
+    const next = updateElement(elements, "el-0", { x: 100, y: 200 });
+    expect(next[0]).toEqual({ ...elements[0], x: 100, y: 200 });
+    expect(next[1]).toBe(elements[1]); // referential equality on untouched
+  });
+
+  it("returns a new array", () => {
+    const next = updateElement(elements, "el-0", { x: 100 });
+    expect(next).not.toBe(elements);
+  });
+
+  it("is a no-op when id is missing", () => {
+    const next = updateElement(elements, "el-99", { x: 100 });
+    expect(next).toEqual(elements);
+  });
+
+  it("can clear fontSize back to null", () => {
+    const next = updateElement(elements, "el-1", { fontSize: null });
+    expect(next[1].fontSize).toBeNull();
   });
 });
