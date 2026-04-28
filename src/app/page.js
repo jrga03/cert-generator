@@ -6,7 +6,7 @@ import Papa from "papaparse";
 
 import { download } from "@/utils/download";
 import { readAsDataURL } from "@/utils/data-url";
-import { generatePreview } from "@/utils/preview";
+import { generatePreview, hitTest } from "@/utils/preview";
 import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
 import { ProgressOverlay } from "@/components/progress-overlay";
 import { Toast } from "@/components/toast";
@@ -42,11 +42,13 @@ export default function Home() {
   const [csvRows, setCsvRows] = useState(null); // null | [{name, org}]
   const [csvError, setCsvError] = useState(null);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
+  const [selectedElement, setSelectedElement] = useState(null); // null | "name" | "org"
   const isGenerating = progress !== null;
   const previewName = csvRows?.[previewRowIndex]?.name;
   const previewOrg = csvRows?.[previewRowIndex]?.org;
   const formRef = useRef(null);
   const canvasRef = useRef(null);
+  const boxesRef = useRef(null);
 
   useLayoutEffect(() => {
     function _generatePreview() {
@@ -54,7 +56,8 @@ export default function Home() {
         generatePreview(
           canvasRef.current,
           { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg },
-          setHasPreview
+          setHasPreview,
+          boxesRef
         );
       requestAnimationFrame(updatePreview);
     }
@@ -68,7 +71,8 @@ export default function Home() {
       generatePreview(
         canvasRef.current,
         { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg },
-        setHasPreview
+        setHasPreview,
+        boxesRef
       )
     );
   }, [previewRowIndex, bgPhoto, numberInputs, previewName, previewOrg]);
@@ -81,7 +85,8 @@ export default function Home() {
       generatePreview(
         canvasRef.current,
         { bgPhoto: url, ...numberInputs, nameText: previewName, orgText: previewOrg },
-        setHasPreview
+        setHasPreview,
+        boxesRef
       );
     requestAnimationFrame(updatePreview);
   }
@@ -99,7 +104,8 @@ export default function Home() {
         generatePreview(
           canvasRef.current,
           { bgPhoto, ...newValues, nameText: previewName, orgText: previewOrg },
-          setHasPreview
+          setHasPreview,
+          boxesRef
         );
 
       requestAnimationFrame(updatePreview);
@@ -137,6 +143,24 @@ export default function Home() {
         setCsvError(err?.message || "Failed to parse CSV.");
       },
     });
+  }
+
+  function getCanvasPoint(event) {
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  }
+
+  function onPointerDownCanvas(event) {
+    if (!boxesRef.current) {
+      setSelectedElement(null);
+      return;
+    }
+    const { x, y } = getCanvasPoint(event);
+    const hit = hitTest(boxesRef.current, x, y);
+    setSelectedElement(hit);
   }
 
   async function onSubmit(event) {
@@ -354,7 +378,11 @@ export default function Home() {
             </Field>
 
             <div className="canvas-container w-full h-auto bg-gray-50 relative">
-              <canvas className="w-full h-full" ref={canvasRef} />
+              <canvas
+                className="w-full h-full touch-none"
+                ref={canvasRef}
+                onPointerDown={onPointerDownCanvas}
+              />
               {!hasPreview && (
                 <div className="absolute inset-0 border rounded italic uppercase flex items-center justify-center text-gray-400">
                   Preview
