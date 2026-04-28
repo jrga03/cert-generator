@@ -16,3 +16,18 @@ export function buildDefaultElements(headers) {
 export function updateElement(elements, id, patch) {
   return elements.map(el => el.id === id ? { ...el, ...patch } : el);
 }
+
+export function parseCertCsv(parsedRows) {
+  const [headerRow, ...dataRows] = parsedRows ?? [];
+  if (!dataRows || dataRows.length === 0) {
+    return { error: "CSV has no data rows." };
+  }
+  const headers = (headerRow ?? []).map((cell, i) =>
+    (cell ?? "").toString().trim() || `Field ${i + 1}`
+  );
+  return {
+    headers,
+    rows: dataRows,
+    elements: buildDefaultElements(headers),
+  };
+}
