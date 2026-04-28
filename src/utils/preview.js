@@ -1,8 +1,11 @@
 import { PAGE_HEIGHT, PAGE_WIDTH } from "./page-size";
 
+const FALLBACK_NAME = "Juan dela Cruz";
+const FALLBACK_ORG = "Organization";
+
 export function generatePreview(
   canvas,
-  { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY },
+  { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY, nameText, orgText },
   successCb
 ) {
   if (
@@ -27,11 +30,9 @@ export function generatePreview(
     canvas.height = canvasHeight;
     const ctx = canvas.getContext("2d");
 
-    // set background
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add image
     const image = new Image();
     image.src = bgPhoto;
     image.width = canvasWidth;
@@ -43,11 +44,8 @@ export function generatePreview(
       ctx.fillStyle = "#000";
       ctx.textAlign = "center";
 
-      // Add text
-      ctx.fillText("Juan dela Cruz", scaledTextX, scaledTextY);
-
-      // Add org text
-      ctx.fillText("Organization", scaledOrgTextX, scaledOrgTextY);
+      ctx.fillText(nameText || FALLBACK_NAME, scaledTextX, scaledTextY);
+      ctx.fillText(orgText || FALLBACK_ORG, scaledOrgTextX, scaledOrgTextY);
     };
 
     successCb?.(true);

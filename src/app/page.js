@@ -43,26 +43,46 @@ export default function Home() {
   const [csvError, setCsvError] = useState(null);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
   const isGenerating = progress !== null;
+  const previewName = csvRows?.[previewRowIndex]?.name;
+  const previewOrg = csvRows?.[previewRowIndex]?.org;
   const formRef = useRef(null);
   const canvasRef = useRef(null);
 
   useLayoutEffect(() => {
     function _generatePreview() {
       const updatePreview = () =>
-        generatePreview(canvasRef.current, { bgPhoto, ...numberInputs }, setHasPreview);
+        generatePreview(
+          canvasRef.current,
+          { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg },
+          setHasPreview
+        );
       requestAnimationFrame(updatePreview);
     }
 
     window.addEventListener("resize", _generatePreview);
     return () => window.removeEventListener("resize", _generatePreview);
-  }, [bgPhoto, numberInputs]);
+  }, [bgPhoto, numberInputs, previewName, previewOrg]);
+
+  useLayoutEffect(() => {
+    requestAnimationFrame(() =>
+      generatePreview(
+        canvasRef.current,
+        { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg },
+        setHasPreview
+      )
+    );
+  }, [previewRowIndex, bgPhoto, numberInputs, previewName, previewOrg]);
 
   function onChangeBgPhoto(event) {
     const url = URL.createObjectURL(event.target.files[0]);
     setBgPhoto(url);
 
     const updatePreview = () =>
-      generatePreview(canvasRef.current, { bgPhoto: url, ...numberInputs }, setHasPreview);
+      generatePreview(
+        canvasRef.current,
+        { bgPhoto: url, ...numberInputs, nameText: previewName, orgText: previewOrg },
+        setHasPreview
+      );
     requestAnimationFrame(updatePreview);
   }
 
@@ -76,7 +96,11 @@ export default function Home() {
       };
 
       const updatePreview = () =>
-        generatePreview(canvasRef.current, { bgPhoto, ...newValues }, setHasPreview);
+        generatePreview(
+          canvasRef.current,
+          { bgPhoto, ...newValues, nameText: previewName, orgText: previewOrg },
+          setHasPreview
+        );
 
       requestAnimationFrame(updatePreview);
 
