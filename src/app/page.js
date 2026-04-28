@@ -8,8 +8,9 @@ import { download } from "@/utils/download";
 import { readAsDataURL } from "@/utils/data-url";
 import { generatePreview, hitTest } from "@/utils/preview";
 import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
-import { ProgressOverlay } from "@/components/progress-overlay";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
 
@@ -247,7 +248,24 @@ export default function Home() {
 
   return (
     <>
-      {progress && <ProgressOverlay current={progress.current} total={progress.total} />}
+      <Dialog open={isGenerating} onOpenChange={() => {}}>
+        <DialogContent
+          className="sm:max-w-md"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          hideClose
+        >
+          <DialogHeader>
+            <DialogTitle>Generating certificates…</DialogTitle>
+          </DialogHeader>
+          <Progress
+            value={progress && progress.total > 0 ? (progress.current / progress.total) * 100 : 0}
+          />
+          <p className="text-sm text-muted-foreground text-center">
+            {progress?.current ?? 0} of {progress?.total ?? 0}
+          </p>
+        </DialogContent>
+      </Dialog>
       <Script
         src="https://github.com/foliojs/pdfkit/releases/download/v0.12.1/pdfkit.standalone.js"
         strategy="lazyOnload"
