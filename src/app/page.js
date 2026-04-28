@@ -224,24 +224,23 @@ export default function Home() {
 
     const img = await readAsDataURL(entries.bgPhoto);
 
-    if (!csvRows) {
+    if (!csvRows || csvRows.length === 0) {
       setError("Please upload a CSV first.");
       return;
     }
 
-    const names = csvRows.map((r) => r.name);
-    const orgs = csvRows.map((r) => r.org);
     const data = {
-      ...entries,
-      names,
-      orgs,
+      type: outputType,
+      separate,
+      rows: csvRows,
+      elements,
+      globalFontSize,
       img,
-      separate: entries.separate === "on",
     };
 
     try {
       setError(null);
-      setProgress({ current: 0, total: names.length });
+      setProgress({ current: 0, total: csvRows.length });
       await download(data, (current, total) => setProgress({ current, total }));
     } catch (err) {
       setError(err?.message || "Failed to generate certificates.");
