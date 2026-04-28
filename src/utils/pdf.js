@@ -67,7 +67,7 @@ const loadFont = (pdfDoc, name, type, url) =>
  * }} data
  * @returns {Promise<Blob>}
  */
-const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY }) =>
+const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY }, onProgress) =>
   new Promise(async (resolve, reject) => {
     const pageWidth = pixelsToPoints(PAGE_WIDTH);
     const pageHeight = pixelsToPoints(PAGE_HEIGHT);
@@ -139,6 +139,8 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
             width: pixelsToPoints(largestOrgWidth),
           }
         );
+
+      onProgress?.(index + 1, names.length);
     }
     /**
      * End of PDF content
@@ -162,11 +164,6 @@ const constructPDF = ({ names, orgs, img, fontSize, textX, textY, orgTextX, orgT
  *   textY: number,
  * }[]} data
  */
-export async function downloadPDF(data) {
-  try {
-    const blob = await constructPDF(data);
-    return blob;
-  } catch (error) {
-    console.log(error);
-  }
+export async function downloadPDF(data, onProgress) {
+  return constructPDF(data, onProgress);
 }

@@ -120,7 +120,8 @@ const addPageToZip = (
  */
 const constructZip = async (
   mime,
-  { names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY }
+  { names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY },
+  onProgress
 ) => {
   const pageWidth = PAGE_WIDTH;
   const pageHeight = PAGE_HEIGHT;
@@ -146,6 +147,7 @@ const constructZip = async (
     };
 
     await addPageToZip(zip, pageData, mime);
+    onProgress?.(index + 1, names.length);
   }
   /**
    * End of zip content
@@ -164,13 +166,7 @@ const constructZip = async (
  *   textY: number,
  * }} data
  */
-export async function downloadAsPhoto(data) {
-  try {
-    const mime = "image/png";
-    const zipBlob = await constructZip(mime, data);
-
-    return zipBlob;
-  } catch (error) {
-    console.log(error);
-  }
+export async function downloadAsPhoto(data, onProgress) {
+  const mime = "image/png";
+  return constructZip(mime, data, onProgress);
 }

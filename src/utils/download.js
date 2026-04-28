@@ -17,13 +17,12 @@ import { downloadPDF } from "./pdf";
  *   separate: boolean,
  * }} data
  */
-export async function download(data) {
+export async function download(data, onProgress) {
   const { type, names, orgs, separate } = data;
 
   switch (type) {
     case "pdf": {
       if (separate) {
-        // create zip
         const zip = new JSZip();
 
         for (const [index, name] of names.entries()) {
@@ -34,33 +33,23 @@ export async function download(data) {
           });
 
           const fileName = `${name}.pdf`;
-          // Add image to zip
           zip.file(fileName, pdf);
+          onProgress?.(index + 1, names.length);
         }
 
         const blob = await zip.generateAsync({ type: "blob" });
-
-        if (blob) {
-          downloadFile(blob, "certificates", "zip");
-        }
+        downloadFile(blob, "certificates", "zip");
       } else {
-        const pdf = await downloadPDF(data);
-
-        if (pdf) {
-          downloadFile(pdf, "certificates", "pdf");
-        }
+        const pdf = await downloadPDF(data, onProgress);
+        downloadFile(pdf, "certificates", "pdf");
       }
 
       break;
     }
 
     case "png": {
-      const zip = await downloadAsPhoto(data);
-
-      if (zip) {
-        downloadFile(zip, "certificates", "zip");
-      }
-
+      const zip = await downloadAsPhoto(data, onProgress);
+      downloadFile(zip, "certificates", "zip");
       break;
     }
   }
