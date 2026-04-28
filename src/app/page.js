@@ -10,7 +10,8 @@ import { generatePreview, hitTest } from "@/utils/preview";
 import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
 import { ProgressOverlay } from "@/components/progress-overlay";
 import { Toast } from "@/components/toast";
-import { loadSettings, saveSettings } from "@/utils/persistence";
+import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
+import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
 
 import "./page.css";
 
@@ -33,28 +34,26 @@ const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 export default function Home() {
   const [bgPhoto, setBgPhoto] = useState(null);
   const [hasPreview, setHasPreview] = useState(null);
-  const [numberInputs, setNumberInputs] = useState({
-    textX: PAGE_WIDTH / 2,
-    textY: PAGE_HEIGHT / 2,
-    orgTextX: PAGE_WIDTH / 2,
-    orgTextY: PAGE_HEIGHT / 2 + DEFAULT_FONT_SIZE,
-    fontSize: DEFAULT_FONT_SIZE,
-  });
-  const [progress, setProgress] = useState(null); // null | { current, total }
+  const [globalFontSize, setGlobalFontSize] = useState(DEFAULT_FONT_SIZE);
+  const [elements, setElements] = useState([]);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [csvRows, setCsvRows] = useState(null); // string[][]
+  const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
-  const [csvRows, setCsvRows] = useState(null); // null | [{name, org}]
   const [csvError, setCsvError] = useState(null);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
-  const [selectedElement, setSelectedElement] = useState(null); // null | "name" | "org"
+  const [selectedElementId, setSelectedElementId] = useState(null);
   const [outputType, setOutputType] = useState("pdf");
   const [separate, setSeparate] = useState(false);
   const isGenerating = progress !== null;
-  const previewName = csvRows?.[previewRowIndex]?.name;
-  const previewOrg = csvRows?.[previewRowIndex]?.org;
+  const rowCells = csvRows?.[previewRowIndex];
   const formRef = useRef(null);
   const canvasRef = useRef(null);
   const boxesRef = useRef(null);
-  const dragRef = useRef(null); // null | { element, offsetX, offsetY, scale }
+  const dragRef = useRef(null); // null | { id, offsetX, offsetY, scale }
+
+  const updateElement = (id, patch) =>
+    setElements(prev => updateElementHelper(prev, id, patch));
 
   useEffect(() => {
     const saved = loadSettings();
@@ -78,7 +77,7 @@ export default function Home() {
       const updatePreview = () =>
         generatePreview(
           canvasRef.current,
-          { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg, selectedElement },
+          { bgPhoto, globalFontSize, elements, rowCells, selectedElementId },
           setHasPreview,
           boxesRef
         );
@@ -87,18 +86,18 @@ export default function Home() {
 
     window.addEventListener("resize", _generatePreview);
     return () => window.removeEventListener("resize", _generatePreview);
-  }, [bgPhoto, numberInputs, previewName, previewOrg, selectedElement]);
+  }, [bgPhoto, globalFontSize, elements, rowCells, selectedElementId]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() =>
       generatePreview(
         canvasRef.current,
-        { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg, selectedElement },
+        { bgPhoto, globalFontSize, elements, rowCells, selectedElementId },
         setHasPreview,
         boxesRef
       )
     );
-  }, [previewRowIndex, bgPhoto, numberInputs, previewName, previewOrg, selectedElement]);
+  }, [previewRowIndex, bgPhoto, globalFontSize, elements, rowCells, selectedElementId]);
 
   function onChangeBgPhoto(event) {
     const url = URL.createObjectURL(event.target.files[0]);
@@ -107,70 +106,51 @@ export default function Home() {
     const updatePreview = () =>
       generatePreview(
         canvasRef.current,
-        { bgPhoto: url, ...numberInputs, nameText: previewName, orgText: previewOrg, selectedElement },
+        { bgPhoto: url, globalFontSize, elements, rowCells, selectedElementId },
         setHasPreview,
         boxesRef
       );
     requestAnimationFrame(updatePreview);
   }
 
-  const onChangeNumberInput = (event) => {
-    const { name, value } = event.target;
-
-    setNumberInputs((prev) => {
-      const newValues = {
-        ...prev,
-        [name]: Number(value),
-      };
-
-      const updatePreview = () =>
-        generatePreview(
-          canvasRef.current,
-          { bgPhoto, ...newValues, nameText: previewName, orgText: previewOrg, selectedElement },
-          setHasPreview,
-          boxesRef
-        );
-
-      requestAnimationFrame(updatePreview);
-
-      return newValues;
-    });
-  };
-
   function onChangeCsv(event) {
     const file = event.target.files[0];
     if (!file) {
+      setCsvHeaders([]);
       setCsvRows(null);
       setCsvError(null);
+      setElements([]);
+      setSelectedElementId(null);
       return;
     }
 
     Papa.parse(file, {
       skipEmptyLines: true,
       complete: (res) => {
-        const rows = res.data.slice(1).map((row) => ({
-          name: row[0] ?? "",
-          org: row[1] ?? "",
-        }));
-        if (rows.length === 0) {
+        const result = parseCertCsv(res.data);
+        if (result.error) {
+          setCsvHeaders([]);
           setCsvRows(null);
-          setCsvError("CSV has no data rows.");
-        } else {
-          setCsvRows(rows);
-          setCsvError(null);
-          setPreviewRowIndex(0);
+          setElements([]);
+          setSelectedElementId(null);
+          setCsvError(result.error);
+          return;
         }
+        setCsvHeaders(result.headers);
+        setCsvRows(result.rows);
+        setElements(result.elements);
+        setSelectedElementId(null);
+        setCsvError(null);
+        setPreviewRowIndex(0);
       },
       error: (err) => {
         setCsvRows(null);
+        setElements([]);
+        setSelectedElementId(null);
         setCsvError(err?.message || "Failed to parse CSV.");
       },
     });
   }
-
-  const inputCls = (element) =>
-    "border px-2 py-1 rounded " +
-    (selectedElement === element ? "ring-2 ring-indigo-400" : "");
 
   function getCanvasPoint(event) {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -182,17 +162,18 @@ export default function Home() {
 
   function onPointerDownCanvas(event) {
     if (!boxesRef.current) {
-      setSelectedElement(null);
+      setSelectedElementId(null);
       return;
     }
     const { x, y } = getCanvasPoint(event);
-    const hit = hitTest(boxesRef.current, x, y);
-    setSelectedElement(hit);
+    const ids = elements.map(e => e.id);
+    const hit = hitTest(boxesRef.current, x, y, ids);
+    setSelectedElementId(hit);
     if (!hit) return;
 
     const box = boxesRef.current[hit];
     dragRef.current = {
-      element: hit,
+      id: hit,
       offsetX: x - box.x,
       offsetY: y - box.y,
       scale: boxesRef.current.scale,
@@ -204,7 +185,8 @@ export default function Home() {
     if (dragRef.current) return;
     if (!boxesRef.current || !canvasRef.current) return;
     const { x, y } = getCanvasPoint(event);
-    const hit = hitTest(boxesRef.current, x, y);
+    const ids = elements.map(e => e.id);
+    const hit = hitTest(boxesRef.current, x, y, ids);
     canvasRef.current.style.cursor = hit ? "move" : "default";
   }
 
@@ -214,29 +196,18 @@ export default function Home() {
       return;
     }
     const { x, y } = getCanvasPoint(event);
-    const { element, offsetX, offsetY, scale } = dragRef.current;
-    const box = boxesRef.current[element];
+    const { id, offsetX, offsetY, scale } = dragRef.current;
+    const box = boxesRef.current[id];
 
     const newCanvasX = x - offsetX;
     const newCanvasY = y - offsetY;
-
     const originCanvasX = newCanvasX + box.width / 2;
     const originCanvasY = newCanvasY + box.height * 0.8;
 
     const pageX = clamp(Math.round(originCanvasX / scale), 0, PAGE_WIDTH);
     const pageY = clamp(Math.round(originCanvasY / scale), 0, PAGE_HEIGHT);
 
-    setNumberInputs((prev) => {
-      const next = { ...prev };
-      if (element === "name") {
-        next.textX = pageX;
-        next.textY = pageY;
-      } else {
-        next.orgTextX = pageX;
-        next.orgTextY = pageY;
-      }
-      return next;
-    });
+    updateElement(id, { x: pageX, y: pageY });
   }
 
   function onPointerUpCanvas(event) {
@@ -374,11 +345,11 @@ export default function Home() {
                   onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
                 >
                   {csvRows.map((row, i) => {
-                    const label = `${row.name}${row.org ? ` — ${row.org}` : ""}`;
+                    const label = row.filter(Boolean).join(" — ");
                     const truncated = label.length > 60 ? label.slice(0, 57) + "…" : label;
                     return (
                       <option key={i} value={i}>
-                        {truncated}
+                        {truncated || `Row ${i + 1}`}
                       </option>
                     );
                   })}
@@ -403,84 +374,97 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex justify-between items-center gap-4">
-              <Field label="Text X" labelFor="textX">
-                <input
-                  className={inputCls("name")}
-                  id="textX"
-                  name="textX"
-                  type="number"
-                  value={numberInputs.textX}
-                  min={0}
-                  max={Number.MAX_SAFE_INTEGER}
-                  step={1}
-                  required
-                  onChange={onChangeNumberInput}
-                />
-              </Field>
-
-              <Field label="Text Y" labelFor="textY">
-                <input
-                  className={inputCls("name")}
-                  id="textY"
-                  name="textY"
-                  type="number"
-                  value={numberInputs.textY}
-                  min={0}
-                  max={Number.MAX_SAFE_INTEGER}
-                  step={1}
-                  required
-                  onChange={onChangeNumberInput}
-                />
-              </Field>
-            </div>
-
-            <div className="flex justify-between items-center gap-4">
-              <Field label="Org Text X" labelFor="orgTextX">
-                <input
-                  className={inputCls("org")}
-                  id="orgTextX"
-                  name="orgTextX"
-                  type="number"
-                  value={numberInputs.orgTextX}
-                  min={0}
-                  max={Number.MAX_SAFE_INTEGER}
-                  step={1}
-                  required
-                  onChange={onChangeNumberInput}
-                />
-              </Field>
-
-              <Field label="Org Text Y" labelFor="orgTextY">
-                <input
-                  className={inputCls("org")}
-                  id="orgTextY"
-                  name="orgTextY"
-                  type="number"
-                  value={numberInputs.orgTextY}
-                  min={0}
-                  max={Number.MAX_SAFE_INTEGER}
-                  step={1}
-                  required
-                  onChange={onChangeNumberInput}
-                />
-              </Field>
-            </div>
-
-            <Field label="Font size" labelFor="fontSize">
+            <Field label="Font size (default)" labelFor="globalFontSize">
               <input
                 className="border px-2 py-1 rounded"
-                id="fontSize"
-                name="fontSize"
+                id="globalFontSize"
+                name="globalFontSize"
                 type="number"
-                value={numberInputs.fontSize}
+                value={globalFontSize}
                 min={1}
-                max={Number.MAX_SAFE_INTEGER}
                 step={1}
                 required
-                onChange={onChangeNumberInput}
+                onChange={(e) => setGlobalFontSize(Number(e.target.value))}
               />
             </Field>
+
+            {elements.length > 0 && (
+              <Field label="Elements">
+                <div className="flex flex-col gap-2">
+                  {elements.map((el) => {
+                    const selected = el.id === selectedElementId;
+                    const rowCls =
+                      "flex flex-row items-center gap-3 p-2 rounded border " +
+                      (selected ? "ring-2 ring-indigo-400" : "");
+                    return (
+                      <div key={el.id} className={rowCls}>
+                        <button
+                          type="button"
+                          className="font-semibold text-left flex-1 truncate"
+                          onClick={() => setSelectedElementId(el.id)}
+                        >
+                          {el.label}
+                        </button>
+                        <label className="text-sm text-gray-700">
+                          X
+                          <input
+                            className="border px-2 py-1 rounded ml-1 w-24"
+                            type="number"
+                            value={el.x}
+                            min={0}
+                            step={1}
+                            onChange={(e) =>
+                              updateElement(el.id, { x: Number(e.target.value) })
+                            }
+                          />
+                        </label>
+                        <label className="text-sm text-gray-700">
+                          Y
+                          <input
+                            className="border px-2 py-1 rounded ml-1 w-24"
+                            type="number"
+                            value={el.y}
+                            min={0}
+                            step={1}
+                            onChange={(e) =>
+                              updateElement(el.id, { y: Number(e.target.value) })
+                            }
+                          />
+                        </label>
+                        <label className="text-sm text-gray-700">
+                          Font
+                          <input
+                            className="border px-2 py-1 rounded ml-1 w-24"
+                            type="number"
+                            placeholder={`${globalFontSize} (global)`}
+                            value={el.fontSize ?? ""}
+                            min={1}
+                            step={1}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              updateElement(el.id, {
+                                fontSize: v === "" ? null : Number(v),
+                              });
+                            }}
+                          />
+                        </label>
+                        {el.fontSize !== null && (
+                          <button
+                            type="button"
+                            className="text-xs text-gray-500 underline"
+                            onClick={() => updateElement(el.id, { fontSize: null })}
+                            aria-label={`Reset font size for ${el.label}`}
+                            title="Reset to global"
+                          >
+                            reset
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
 
             <div className="canvas-container w-full h-auto bg-gray-50 relative">
               <canvas
