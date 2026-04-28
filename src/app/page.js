@@ -11,10 +11,9 @@ import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
-
-import "./page.css";
 
 function Field({ label, labelFor, children, helperText }) {
   return (
@@ -271,228 +270,231 @@ export default function Home() {
         strategy="lazyOnload"
       />
 
-      <main className="flex justify-center items-center p-16">
-        <form className="w-full h-full" onSubmit={onSubmit} ref={formRef}>
-          <div className="container flex flex-col mx-auto">
-            <Field label="Download as:" labelFor="type">
-              <div>
-                <input
-                  id="pdf"
-                  name="type"
-                  type="radio"
-                  value="pdf"
-                  required
-                  checked={outputType === "pdf"}
-                  onChange={() => setOutputType("pdf")}
-                />
-                <label htmlFor="pdf" className="ml-2">
-                  PDF
-                </label>
-              </div>
-              <div>
-                <input
-                  id="png"
-                  name="type"
-                  type="radio"
-                  value="png"
-                  required
-                  checked={outputType === "png"}
-                  onChange={() => setOutputType("png")}
-                />
-                <label htmlFor="png" className="ml-2">
-                  PNG
-                </label>
-              </div>
-            </Field>
+      <main className="container mx-auto p-6 lg:p-10">
+        <header className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight">Certificate Generator</h1>
+          <p className="text-sm text-muted-foreground">
+            Upload a CSV and a background image, position your text, then export PDF or PNG.
+          </p>
+        </header>
 
-            {/* Switch */}
-            <div className="flex flex-row items-center mb-6 select-none">
-              <input
-                id="separate"
-                name="separate"
-                type="checkbox"
-                checked={separate}
-                onChange={(e) => setSeparate(e.target.checked)}
-              />
-              {/* <label htmlFor="separate" className="switch-toggle">
-                Toggle
-              </label> */}
-              <label htmlFor="separate" className="ml-2 font-bold text-lg text-gray-900">
-                Download as separate files?
-              </label>
-              <span className="ml-1 italic text-gray-900">(for PDF only)</span>
-            </div>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,480px)_1fr]">
+          <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle>Output</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <Field label="Download as:" labelFor="type">
+                  <div>
+                    <input
+                      id="pdf"
+                      name="type"
+                      type="radio"
+                      value="pdf"
+                      required
+                      checked={outputType === "pdf"}
+                      onChange={() => setOutputType("pdf")}
+                    />
+                    <label htmlFor="pdf" className="ml-2">
+                      PDF
+                    </label>
+                  </div>
+                  <div>
+                    <input
+                      id="png"
+                      name="type"
+                      type="radio"
+                      value="png"
+                      required
+                      checked={outputType === "png"}
+                      onChange={() => setOutputType("png")}
+                    />
+                    <label htmlFor="png" className="ml-2">
+                      PNG
+                    </label>
+                  </div>
+                </Field>
 
-            <Field
-              label={
-                <div>
-                  <label htmlFor="names">Names (.csv) </label>
-                  <a
-                    className="text-xs text-blue-400 underline italic"
-                    href="/sample_names.csv"
-                    download
-                  >
-                    Download Sample
-                  </a>
+                {/* Switch */}
+                <div className="flex flex-row items-center mb-6 select-none">
+                  <input
+                    id="separate"
+                    name="separate"
+                    type="checkbox"
+                    checked={separate}
+                    onChange={(e) => setSeparate(e.target.checked)}
+                  />
+                  <label htmlFor="separate" className="ml-2 font-bold text-lg text-gray-900">
+                    Download as separate files?
+                  </label>
+                  <span className="ml-1 italic text-gray-900">(for PDF only)</span>
                 </div>
-              }
-            >
-              <input
-                id="names"
-                name="names"
-                type="file"
-                accept=".csv"
-                required
-                onChange={onChangeCsv}
-              />
-              {csvError && <p className="mt-1 text-sm text-red-600">{csvError}</p>}
-            </Field>
+              </CardContent>
+            </Card>
 
-            {csvRows && csvRows.length > 0 && (
-              <Field label="Preview row" labelFor="previewRow">
-                <select
-                  id="previewRow"
-                  className="border px-2 py-1 rounded"
-                  value={previewRowIndex}
-                  onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
+            <Card>
+              <CardHeader><CardTitle>Data</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <Field
+                  label={
+                    <div>
+                      <label htmlFor="names">Names (.csv) </label>
+                      <a
+                        className="text-xs text-blue-400 underline italic"
+                        href="/sample_names.csv"
+                        download
+                      >
+                        Download Sample
+                      </a>
+                    </div>
+                  }
                 >
-                  {csvRows.map((row, i) => {
-                    const label = row.filter(Boolean).join(" — ");
-                    const truncated = label.length > 60 ? label.slice(0, 57) + "…" : label;
-                    return (
-                      <option key={i} value={i}>
-                        {truncated || `Row ${i + 1}`}
-                      </option>
-                    );
-                  })}
-                </select>
-              </Field>
-            )}
+                  <input
+                    id="names"
+                    name="names"
+                    type="file"
+                    accept=".csv"
+                    required
+                    onChange={onChangeCsv}
+                  />
+                  {csvError && <p className="mt-1 text-sm text-red-600">{csvError}</p>}
+                </Field>
 
-            <div className="flex flex-row gap-4">
-              <Field label="Background photo (.png, .jpg)" labelFor="bgPhoto">
-                <input
-                  id="bgPhoto"
-                  name="bgPhoto"
-                  type="file"
-                  accept=".png, .jpg"
-                  required
-                  onChange={onChangeBgPhoto}
-                />
-              </Field>
+                <div className="flex flex-row gap-4">
+                  <Field label="Background photo (.png, .jpg)" labelFor="bgPhoto">
+                    <input
+                      id="bgPhoto"
+                      name="bgPhoto"
+                      type="file"
+                      accept=".png, .jpg"
+                      required
+                      onChange={onChangeBgPhoto}
+                    />
+                  </Field>
 
-              <div className="w-20 h-20">
-                {bgPhoto && <img className="w-full h-full object-contain" src={bgPhoto} alt="" />}
-              </div>
-            </div>
-
-            <Field label="Font size (default)" labelFor="globalFontSize">
-              <input
-                className="border px-2 py-1 rounded"
-                id="globalFontSize"
-                name="globalFontSize"
-                type="number"
-                value={globalFontSize}
-                min={1}
-                step={1}
-                required
-                onChange={(e) => setGlobalFontSize(Number(e.target.value))}
-              />
-            </Field>
-
-            {elements.length > 0 && (
-              <Field label="Elements">
-                <div className="flex flex-col gap-2">
-                  {elements.map((el) => {
-                    const selected = el.id === selectedElementId;
-                    const rowCls =
-                      "flex flex-row items-center gap-3 p-2 rounded border " +
-                      (selected ? "ring-2 ring-indigo-400" : "");
-                    return (
-                      <div key={el.id} className={rowCls}>
-                        <button
-                          type="button"
-                          className="font-semibold text-left flex-1 truncate"
-                          onClick={() => setSelectedElementId(el.id)}
-                        >
-                          {el.label}
-                        </button>
-                        <label className="text-sm text-gray-700">
-                          X
-                          <input
-                            className="border px-2 py-1 rounded ml-1 w-24"
-                            type="number"
-                            value={el.x}
-                            min={0}
-                            step={1}
-                            onChange={(e) =>
-                              updateElement(el.id, { x: Number(e.target.value) })
-                            }
-                          />
-                        </label>
-                        <label className="text-sm text-gray-700">
-                          Y
-                          <input
-                            className="border px-2 py-1 rounded ml-1 w-24"
-                            type="number"
-                            value={el.y}
-                            min={0}
-                            step={1}
-                            onChange={(e) =>
-                              updateElement(el.id, { y: Number(e.target.value) })
-                            }
-                          />
-                        </label>
-                        <label className="text-sm text-gray-700">
-                          Font
-                          <input
-                            className="border px-2 py-1 rounded ml-1 w-24"
-                            type="number"
-                            placeholder={`${globalFontSize} (global)`}
-                            value={el.fontSize ?? ""}
-                            min={1}
-                            step={1}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              updateElement(el.id, {
-                                fontSize: v === "" ? null : Number(v),
-                              });
-                            }}
-                          />
-                        </label>
-                        {el.fontSize !== null && (
-                          <button
-                            type="button"
-                            className="text-xs text-gray-500 underline"
-                            onClick={() => updateElement(el.id, { fontSize: null })}
-                            aria-label={`Reset font size for ${el.label}`}
-                            title="Reset to global"
-                          >
-                            reset
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                  <div className="w-20 h-20">
+                    {bgPhoto && <img className="w-full h-full object-contain" src={bgPhoto} alt="" />}
+                  </div>
                 </div>
-              </Field>
-            )}
 
-            <div className="canvas-container w-full h-auto bg-gray-50 relative">
-              <canvas
-                className="w-full h-full touch-none"
-                ref={canvasRef}
-                onPointerDown={onPointerDownCanvas}
-                onPointerMove={onPointerMoveCanvas}
-                onPointerUp={onPointerUpCanvas}
-                onPointerCancel={onPointerUpCanvas}
-              />
-              {!hasPreview && (
-                <div className="absolute inset-0 border rounded italic uppercase flex items-center justify-center text-gray-400">
-                  Preview
-                </div>
-              )}
-            </div>
+                {csvRows && csvRows.length > 0 && (
+                  <Field label="Preview row" labelFor="previewRow">
+                    <select
+                      id="previewRow"
+                      className="border px-2 py-1 rounded"
+                      value={previewRowIndex}
+                      onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
+                    >
+                      {csvRows.map((row, i) => {
+                        const label = row.filter(Boolean).join(" — ");
+                        const truncated = label.length > 60 ? label.slice(0, 57) + "…" : label;
+                        return (
+                          <option key={i} value={i}>
+                            {truncated || `Row ${i + 1}`}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </Field>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Typography</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <Field label="Font size (default)" labelFor="globalFontSize">
+                  <input
+                    className="border px-2 py-1 rounded"
+                    id="globalFontSize"
+                    name="globalFontSize"
+                    type="number"
+                    value={globalFontSize}
+                    min={1}
+                    step={1}
+                    required
+                    onChange={(e) => setGlobalFontSize(Number(e.target.value))}
+                  />
+                </Field>
+
+                {elements.length > 0 && (
+                  <Field label="Elements">
+                    <div className="flex flex-col gap-2">
+                      {elements.map((el) => {
+                        const selected = el.id === selectedElementId;
+                        const rowCls =
+                          "flex flex-row items-center gap-3 p-2 rounded border " +
+                          (selected ? "ring-2 ring-indigo-400" : "");
+                        return (
+                          <div key={el.id} className={rowCls}>
+                            <button
+                              type="button"
+                              className="font-semibold text-left flex-1 truncate"
+                              onClick={() => setSelectedElementId(el.id)}
+                            >
+                              {el.label}
+                            </button>
+                            <label className="text-sm text-gray-700">
+                              X
+                              <input
+                                className="border px-2 py-1 rounded ml-1 w-24"
+                                type="number"
+                                value={el.x}
+                                min={0}
+                                step={1}
+                                onChange={(e) =>
+                                  updateElement(el.id, { x: Number(e.target.value) })
+                                }
+                              />
+                            </label>
+                            <label className="text-sm text-gray-700">
+                              Y
+                              <input
+                                className="border px-2 py-1 rounded ml-1 w-24"
+                                type="number"
+                                value={el.y}
+                                min={0}
+                                step={1}
+                                onChange={(e) =>
+                                  updateElement(el.id, { y: Number(e.target.value) })
+                                }
+                              />
+                            </label>
+                            <label className="text-sm text-gray-700">
+                              Font
+                              <input
+                                className="border px-2 py-1 rounded ml-1 w-24"
+                                type="number"
+                                placeholder={`${globalFontSize} (global)`}
+                                value={el.fontSize ?? ""}
+                                min={1}
+                                step={1}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  updateElement(el.id, {
+                                    fontSize: v === "" ? null : Number(v),
+                                  });
+                                }}
+                              />
+                            </label>
+                            {el.fontSize !== null && (
+                              <button
+                                type="button"
+                                className="text-xs text-gray-500 underline"
+                                onClick={() => updateElement(el.id, { fontSize: null })}
+                                aria-label={`Reset font size for ${el.label}`}
+                                title="Reset to global"
+                              >
+                                reset
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Field>
+                )}
+              </CardContent>
+            </Card>
 
             <button
               type="submit"
@@ -504,8 +506,33 @@ export default function Home() {
             >
               {isGenerating ? "Generating…" : "Generate"}
             </button>
-          </div>
-        </form>
+          </form>
+
+          <aside className="lg:sticky lg:top-6 self-start space-y-2">
+            <Card>
+              <CardContent className="p-4">
+                <div className="aspect-[1.7] w-full bg-muted relative">
+                  <canvas
+                    className="w-full h-full touch-none"
+                    ref={canvasRef}
+                    onPointerDown={onPointerDownCanvas}
+                    onPointerMove={onPointerMoveCanvas}
+                    onPointerUp={onPointerUpCanvas}
+                    onPointerCancel={onPointerUpCanvas}
+                  />
+                  {!hasPreview && (
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground italic uppercase text-sm">
+                      Preview
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <p className="text-xs text-muted-foreground">
+              Drag the text on the canvas to reposition. Click to select.
+            </p>
+          </aside>
+        </div>
       </main>
     </>
   );
