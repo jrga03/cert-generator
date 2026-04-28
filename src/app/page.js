@@ -56,21 +56,19 @@ export default function Home() {
     setElements(prev => updateElementHelper(prev, id, patch));
 
   useEffect(() => {
-    const saved = loadSettings();
+    const saved = migrateLoadedSettings(loadSettings());
     if (!saved) return;
-    if (saved.numberInputs) {
-      setNumberInputs((prev) => ({ ...prev, ...saved.numberInputs }));
-    }
+    if (typeof saved.globalFontSize === "number") setGlobalFontSize(saved.globalFontSize);
     if (saved.outputType) setOutputType(saved.outputType);
     if (typeof saved.separate === "boolean") setSeparate(saved.separate);
   }, []);
 
   useEffect(() => {
     const id = setTimeout(() => {
-      saveSettings({ numberInputs, outputType, separate });
+      saveSettings({ globalFontSize, outputType, separate });
     }, 250);
     return () => clearTimeout(id);
-  }, [numberInputs, outputType, separate]);
+  }, [globalFontSize, outputType, separate]);
 
   useLayoutEffect(() => {
     function _generatePreview() {
