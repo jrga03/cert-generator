@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
 
@@ -373,96 +374,98 @@ export default function Home() {
             <Card>
               <CardHeader><CardTitle>Typography</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Field label="Font size (default)" labelFor="globalFontSize">
-                  <input
-                    className="border px-2 py-1 rounded"
+                <div className="space-y-2">
+                  <Label htmlFor="globalFontSize">Default font size</Label>
+                  <Input
                     id="globalFontSize"
-                    name="globalFontSize"
                     type="number"
                     value={globalFontSize}
                     min={1}
                     step={1}
                     required
                     onChange={(e) => setGlobalFontSize(Number(e.target.value))}
+                    className="w-32"
                   />
-                </Field>
+                </div>
 
                 {elements.length > 0 && (
-                  <Field label="Elements">
-                    <div className="flex flex-col gap-2">
+                  <div className="space-y-3">
+                    <Label>Elements</Label>
+                    <div className="space-y-2">
                       {elements.map((el) => {
                         const selected = el.id === selectedElementId;
-                        const rowCls =
-                          "flex flex-row items-center gap-3 p-2 rounded border " +
-                          (selected ? "ring-2 ring-indigo-400" : "");
                         return (
-                          <div key={el.id} className={rowCls}>
-                            <button
-                              type="button"
-                              className="font-semibold text-left flex-1 truncate"
-                              onClick={() => setSelectedElementId(el.id)}
-                            >
-                              {el.label}
-                            </button>
-                            <label className="text-sm text-gray-700">
-                              X
-                              <input
-                                className="border px-2 py-1 rounded ml-1 w-24"
-                                type="number"
-                                value={el.x}
-                                min={0}
-                                step={1}
-                                onChange={(e) =>
-                                  updateElement(el.id, { x: Number(e.target.value) })
-                                }
-                              />
-                            </label>
-                            <label className="text-sm text-gray-700">
-                              Y
-                              <input
-                                className="border px-2 py-1 rounded ml-1 w-24"
-                                type="number"
-                                value={el.y}
-                                min={0}
-                                step={1}
-                                onChange={(e) =>
-                                  updateElement(el.id, { y: Number(e.target.value) })
-                                }
-                              />
-                            </label>
-                            <label className="text-sm text-gray-700">
-                              Font
-                              <input
-                                className="border px-2 py-1 rounded ml-1 w-24"
-                                type="number"
-                                placeholder={`${globalFontSize} (global)`}
-                                value={el.fontSize ?? ""}
-                                min={1}
-                                step={1}
-                                onChange={(e) => {
-                                  const v = e.target.value;
-                                  updateElement(el.id, {
-                                    fontSize: v === "" ? null : Number(v),
-                                  });
-                                }}
-                              />
-                            </label>
-                            {el.fontSize !== null && (
+                          <div
+                            key={el.id}
+                            className={cn(
+                              "rounded-md border p-3 space-y-3",
+                              selected && "ring-2 ring-ring"
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-2">
                               <button
                                 type="button"
-                                className="text-xs text-gray-500 underline"
-                                onClick={() => updateElement(el.id, { fontSize: null })}
-                                aria-label={`Reset font size for ${el.label}`}
-                                title="Reset to global"
+                                onClick={() => setSelectedElementId(el.id)}
+                                className="text-sm font-semibold text-left flex-1 truncate hover:text-primary"
                               >
-                                reset
+                                {el.label}
                               </button>
-                            )}
+                              {el.fontSize !== null && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateElement(el.id, { fontSize: null })}
+                                  className="text-xs text-muted-foreground underline hover:text-foreground"
+                                  aria-label={`Reset font size for ${el.label}`}
+                                  title="Reset to global"
+                                >
+                                  reset
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="space-y-1">
+                                <Label htmlFor={`x-${el.id}`} className="text-xs text-muted-foreground">X</Label>
+                                <Input
+                                  id={`x-${el.id}`}
+                                  type="number"
+                                  value={el.x}
+                                  min={0}
+                                  step={1}
+                                  onChange={(e) => updateElement(el.id, { x: Number(e.target.value) })}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`y-${el.id}`} className="text-xs text-muted-foreground">Y</Label>
+                                <Input
+                                  id={`y-${el.id}`}
+                                  type="number"
+                                  value={el.y}
+                                  min={0}
+                                  step={1}
+                                  onChange={(e) => updateElement(el.id, { y: Number(e.target.value) })}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`f-${el.id}`} className="text-xs text-muted-foreground">Font</Label>
+                                <Input
+                                  id={`f-${el.id}`}
+                                  type="number"
+                                  placeholder={`${globalFontSize}`}
+                                  value={el.fontSize ?? ""}
+                                  min={1}
+                                  step={1}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    updateElement(el.id, { fontSize: v === "" ? null : Number(v) });
+                                  }}
+                                />
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-                  </Field>
+                  </div>
                 )}
               </CardContent>
             </Card>
