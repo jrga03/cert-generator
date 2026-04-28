@@ -39,6 +39,9 @@ export default function Home() {
   });
   const [progress, setProgress] = useState(null); // null | { current, total }
   const [error, setError] = useState(null);
+  const [csvRows, setCsvRows] = useState(null); // null | [{name, org}]
+  const [csvError, setCsvError] = useState(null);
+  const [previewRowIndex, setPreviewRowIndex] = useState(0);
   const isGenerating = progress !== null;
   const formRef = useRef(null);
   const canvasRef = useRef(null);
@@ -81,6 +84,37 @@ export default function Home() {
     });
   };
 
+  function onChangeCsv(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      setCsvRows(null);
+      setCsvError(null);
+      return;
+    }
+
+    Papa.parse(file, {
+      skipEmptyLines: true,
+      complete: (res) => {
+        const rows = res.data.slice(1).map((row) => ({
+          name: row[0] ?? "",
+          org: row[1] ?? "",
+        }));
+        if (rows.length === 0) {
+          setCsvRows(null);
+          setCsvError("CSV has no data rows.");
+        } else {
+          setCsvRows(rows);
+          setCsvError(null);
+          setPreviewRowIndex(0);
+        }
+      },
+      error: (err) => {
+        setCsvRows(null);
+        setCsvError(err?.message || "Failed to parse CSV.");
+      },
+    });
+  }
+
   async function onSubmit(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
@@ -88,33 +122,30 @@ export default function Home() {
 
     const img = await readAsDataURL(entries.bgPhoto);
 
-    Papa.parse(entries.names, {
-      skipEmptyLines: true,
-      complete: async (res) => {
-        const names = res.data.slice(1).map((row) => row[0]);
-        const orgs = res.data.slice(1).map((row) => row[1]);
+    if (!csvRows) {
+      setError("Please upload a CSV first.");
+      return;
+    }
 
-        const data = {
-          ...entries,
-          names,
-          orgs,
-          img,
-          separate: entries.separate === "on",
-        };
+    const names = csvRows.map((r) => r.name);
+    const orgs = csvRows.map((r) => r.org);
+    const data = {
+      ...entries,
+      names,
+      orgs,
+      img,
+      separate: entries.separate === "on",
+    };
 
-        try {
-          setError(null);
-          setProgress({ current: 0, total: names.length });
-          await download(data, (current, total) =>
-            setProgress({ current, total })
-          );
-        } catch (err) {
-          setError(err?.message || "Failed to generate certificates.");
-        } finally {
-          setProgress(null);
-        }
-      },
-    });
+    try {
+      setError(null);
+      setProgress({ current: 0, total: names.length });
+      await download(data, (current, total) => setProgress({ current, total }));
+    } catch (err) {
+      setError(err?.message || "Failed to generate certificates.");
+    } finally {
+      setProgress(null);
+    }
   }
 
   return (
@@ -170,7 +201,15 @@ export default function Home() {
                 </div>
               }
             >
-              <input id="names" name="names" type="file" accept=".csv" required />
+              <input
+                id="names"
+                name="names"
+                type="file"
+                accept=".csv"
+                required
+                onChange={onChangeCsv}
+              />
+              {csvError && <p className="mt-1 text-sm text-red-600">{csvError}</p>}
             </Field>
 
             <div className="flex flex-row gap-4">
