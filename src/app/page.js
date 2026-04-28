@@ -212,6 +212,27 @@ export default function Home() {
               {csvError && <p className="mt-1 text-sm text-red-600">{csvError}</p>}
             </Field>
 
+            {csvRows && csvRows.length > 0 && (
+              <Field label="Preview row" labelFor="previewRow">
+                <select
+                  id="previewRow"
+                  className="border px-2 py-1 rounded"
+                  value={previewRowIndex}
+                  onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
+                >
+                  {csvRows.map((row, i) => {
+                    const label = `${row.name}${row.org ? ` — ${row.org}` : ""}`;
+                    const truncated = label.length > 60 ? label.slice(0, 57) + "…" : label;
+                    return (
+                      <option key={i} value={i}>
+                        {truncated}
+                      </option>
+                    );
+                  })}
+                </select>
+              </Field>
+            )}
+
             <div className="flex flex-row gap-4">
               <Field label="Background photo (.png, .jpg)" labelFor="bgPhoto">
                 <input
