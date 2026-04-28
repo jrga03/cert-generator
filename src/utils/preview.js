@@ -112,15 +112,19 @@ export function generatePreview(
   successCb?.(true);
 }
 
-export function hitTest(boxes, canvasX, canvasY) {
-  if (!boxes) return null;
-  const inside = (b) =>
-    canvasX >= b.x &&
-    canvasX <= b.x + b.width &&
-    canvasY >= b.y &&
-    canvasY <= b.y + b.height;
-  // org draws after name, so prefer org on overlap
-  if (inside(boxes.org)) return "org";
-  if (inside(boxes.name)) return "name";
+export function hitTest(boxes, canvasX, canvasY, elementIds) {
+  if (!boxes || !elementIds) return null;
+  for (let i = elementIds.length - 1; i >= 0; i--) {
+    const b = boxes[elementIds[i]];
+    if (!b) continue;
+    if (
+      canvasX >= b.x &&
+      canvasX <= b.x + b.width &&
+      canvasY >= b.y &&
+      canvasY <= b.y + b.height
+    ) {
+      return elementIds[i];
+    }
+  }
   return null;
 }
