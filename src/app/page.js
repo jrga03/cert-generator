@@ -230,9 +230,19 @@ export default function Home() {
       img,
     };
 
+    // PDFKit renders the combined PDF in a single synchronous pass, so per-row
+    // progress updates can't paint until it finishes. Show indeterminate for that
+    // case; PNG and separate-PDF iterate asynchronously and update determinate.
+    const indeterminate = outputType === "pdf" && !separate;
+
     try {
-      setProgress({ current: 0, total: csvRows.length });
-      await download(data, (current, total) => setProgress({ current, total }));
+      if (indeterminate) {
+        setProgress({ indeterminate: true });
+        await download(data);
+      } else {
+        setProgress({ current: 0, total: csvRows.length });
+        await download(data, (current, total) => setProgress({ current, total }));
+      }
     } catch (err) {
       toast.error(err?.message || "Failed to generate certificates.");
     } finally {
@@ -253,11 +263,19 @@ export default function Home() {
             <DialogTitle>Generating certificates…</DialogTitle>
           </DialogHeader>
           <Progress
-            value={progress && progress.total > 0 ? (progress.current / progress.total) * 100 : 0}
+            value={
+              progress?.indeterminate
+                ? undefined
+                : progress && progress.total > 0
+                ? (progress.current / progress.total) * 100
+                : 0
+            }
           />
-          <p className="text-sm text-muted-foreground text-center">
-            {progress?.current ?? 0} of {progress?.total ?? 0}
-          </p>
+          {!progress?.indeterminate && (
+            <p className="text-sm text-muted-foreground text-center">
+              {progress?.current ?? 0} of {progress?.total ?? 0}
+            </p>
+          )}
         </DialogContent>
       </Dialog>
       <Script
