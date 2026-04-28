@@ -8,6 +8,8 @@ import { download } from "@/utils/download";
 import { readAsDataURL } from "@/utils/data-url";
 import { generatePreview } from "@/utils/preview";
 import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
+import { ProgressOverlay } from "@/components/progress-overlay";
+import { Toast } from "@/components/toast";
 
 import "./page.css";
 
@@ -35,6 +37,9 @@ export default function Home() {
     orgTextY: PAGE_HEIGHT / 2 + DEFAULT_FONT_SIZE,
     fontSize: DEFAULT_FONT_SIZE,
   });
+  const [progress, setProgress] = useState(null); // null | { current, total }
+  const [error, setError] = useState(null);
+  const isGenerating = progress !== null;
   const formRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -97,13 +102,25 @@ export default function Home() {
           separate: entries.separate === "on",
         };
 
-        await download(data);
+        try {
+          setError(null);
+          setProgress({ current: 0, total: names.length });
+          await download(data, (current, total) =>
+            setProgress({ current, total })
+          );
+        } catch (err) {
+          setError(err?.message || "Failed to generate certificates.");
+        } finally {
+          setProgress(null);
+        }
       },
     });
   }
 
   return (
     <>
+      {progress && <ProgressOverlay current={progress.current} total={progress.total} />}
+      <Toast message={error} onClose={() => setError(null)} />
       <Script
         src="https://github.com/foliojs/pdfkit/releases/download/v0.12.1/pdfkit.standalone.js"
         strategy="lazyOnload"
@@ -263,12 +280,13 @@ export default function Home() {
 
             <button
               type="submit"
+              disabled={isGenerating}
               className={
-                "mt-8 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" +
+                "mt-8 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed " +
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               }
             >
-              Generate
+              {isGenerating ? "Generating…" : "Generate"}
             </button>
           </div>
         </form>
