@@ -6,7 +6,8 @@ const FALLBACK_ORG = "Organization";
 export function generatePreview(
   canvas,
   { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY, nameText, orgText },
-  successCb
+  successCb,
+  boxesRef
 ) {
   if (
     canvas &&
@@ -44,12 +45,54 @@ export function generatePreview(
       ctx.fillStyle = "#000";
       ctx.textAlign = "center";
 
-      ctx.fillText(nameText || FALLBACK_NAME, scaledTextX, scaledTextY);
-      ctx.fillText(orgText || FALLBACK_ORG, scaledOrgTextX, scaledOrgTextY);
+      const drawnName = nameText || FALLBACK_NAME;
+      const drawnOrg = orgText || FALLBACK_ORG;
+
+      ctx.fillText(drawnName, scaledTextX, scaledTextY);
+      ctx.fillText(drawnOrg, scaledOrgTextX, scaledOrgTextY);
+
+      if (boxesRef) {
+        const nameMetrics = ctx.measureText(drawnName);
+        const orgMetrics = ctx.measureText(drawnOrg);
+
+        const nameAscent = nameMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
+        const nameDescent = nameMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
+        const orgAscent = orgMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
+        const orgDescent = orgMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
+
+        boxesRef.current = {
+          name: {
+            x: scaledTextX - nameMetrics.width / 2,
+            y: scaledTextY - nameAscent,
+            width: nameMetrics.width,
+            height: nameAscent + nameDescent,
+          },
+          org: {
+            x: scaledOrgTextX - orgMetrics.width / 2,
+            y: scaledOrgTextY - orgAscent,
+            width: orgMetrics.width,
+            height: orgAscent + orgDescent,
+          },
+          scale,
+        };
+      }
     };
 
     successCb?.(true);
     return;
   }
   successCb?.(false);
+}
+
+export function hitTest(boxes, canvasX, canvasY) {
+  if (!boxes) return null;
+  const inside = (b) =>
+    canvasX >= b.x &&
+    canvasX <= b.x + b.width &&
+    canvasY >= b.y &&
+    canvasY <= b.y + b.height;
+  // org draws after name, so prefer org on overlap
+  if (inside(boxes.org)) return "org";
+  if (inside(boxes.name)) return "name";
+  return null;
 }
