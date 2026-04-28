@@ -5,7 +5,7 @@ const FALLBACK_ORG = "Organization";
 
 export function generatePreview(
   canvas,
-  { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY, nameText, orgText },
+  { bgPhoto, fontSize, textX, textY, orgTextX, orgTextY, nameText, orgText, selectedElement },
   successCb,
   boxesRef
 ) {
@@ -51,30 +51,41 @@ export function generatePreview(
       ctx.fillText(drawnName, scaledTextX, scaledTextY);
       ctx.fillText(drawnOrg, scaledOrgTextX, scaledOrgTextY);
 
+      const nameMetrics = ctx.measureText(drawnName);
+      const orgMetrics = ctx.measureText(drawnOrg);
+      const nameAscent = nameMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
+      const nameDescent = nameMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
+      const orgAscent = orgMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
+      const orgDescent = orgMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
+
+      const boxes = {
+        name: {
+          x: scaledTextX - nameMetrics.width / 2,
+          y: scaledTextY - nameAscent,
+          width: nameMetrics.width,
+          height: nameAscent + nameDescent,
+        },
+        org: {
+          x: scaledOrgTextX - orgMetrics.width / 2,
+          y: scaledOrgTextY - orgAscent,
+          width: orgMetrics.width,
+          height: orgAscent + orgDescent,
+        },
+        scale,
+      };
+
       if (boxesRef) {
-        const nameMetrics = ctx.measureText(drawnName);
-        const orgMetrics = ctx.measureText(drawnOrg);
+        boxesRef.current = boxes;
+      }
 
-        const nameAscent = nameMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
-        const nameDescent = nameMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
-        const orgAscent = orgMetrics.actualBoundingBoxAscent ?? scaledFontSize * 0.8;
-        const orgDescent = orgMetrics.actualBoundingBoxDescent ?? scaledFontSize * 0.2;
-
-        boxesRef.current = {
-          name: {
-            x: scaledTextX - nameMetrics.width / 2,
-            y: scaledTextY - nameAscent,
-            width: nameMetrics.width,
-            height: nameAscent + nameDescent,
-          },
-          org: {
-            x: scaledOrgTextX - orgMetrics.width / 2,
-            y: scaledOrgTextY - orgAscent,
-            width: orgMetrics.width,
-            height: orgAscent + orgDescent,
-          },
-          scale,
-        };
+      if (selectedElement && boxes[selectedElement]) {
+        const b = boxes[selectedElement];
+        ctx.save();
+        ctx.strokeStyle = "#4f46e5";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(b.x - 4, b.y - 4, b.width + 8, b.height + 8);
+        ctx.restore();
       }
     };
 

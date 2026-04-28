@@ -58,7 +58,7 @@ export default function Home() {
       const updatePreview = () =>
         generatePreview(
           canvasRef.current,
-          { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg },
+          { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg, selectedElement },
           setHasPreview,
           boxesRef
         );
@@ -67,18 +67,18 @@ export default function Home() {
 
     window.addEventListener("resize", _generatePreview);
     return () => window.removeEventListener("resize", _generatePreview);
-  }, [bgPhoto, numberInputs, previewName, previewOrg]);
+  }, [bgPhoto, numberInputs, previewName, previewOrg, selectedElement]);
 
   useLayoutEffect(() => {
     requestAnimationFrame(() =>
       generatePreview(
         canvasRef.current,
-        { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg },
+        { bgPhoto, ...numberInputs, nameText: previewName, orgText: previewOrg, selectedElement },
         setHasPreview,
         boxesRef
       )
     );
-  }, [previewRowIndex, bgPhoto, numberInputs, previewName, previewOrg]);
+  }, [previewRowIndex, bgPhoto, numberInputs, previewName, previewOrg, selectedElement]);
 
   function onChangeBgPhoto(event) {
     const url = URL.createObjectURL(event.target.files[0]);
@@ -87,7 +87,7 @@ export default function Home() {
     const updatePreview = () =>
       generatePreview(
         canvasRef.current,
-        { bgPhoto: url, ...numberInputs, nameText: previewName, orgText: previewOrg },
+        { bgPhoto: url, ...numberInputs, nameText: previewName, orgText: previewOrg, selectedElement },
         setHasPreview,
         boxesRef
       );
@@ -106,7 +106,7 @@ export default function Home() {
       const updatePreview = () =>
         generatePreview(
           canvasRef.current,
-          { bgPhoto, ...newValues, nameText: previewName, orgText: previewOrg },
+          { bgPhoto, ...newValues, nameText: previewName, orgText: previewOrg, selectedElement },
           setHasPreview,
           boxesRef
         );
@@ -148,6 +148,10 @@ export default function Home() {
     });
   }
 
+  const inputCls = (element) =>
+    "border px-2 py-1 rounded " +
+    (selectedElement === element ? "ring-2 ring-indigo-400" : "");
+
   function getCanvasPoint(event) {
     const rect = canvasRef.current.getBoundingClientRect();
     return {
@@ -176,8 +180,19 @@ export default function Home() {
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
+  function onPointerHover(event) {
+    if (dragRef.current) return;
+    if (!boxesRef.current || !canvasRef.current) return;
+    const { x, y } = getCanvasPoint(event);
+    const hit = hitTest(boxesRef.current, x, y);
+    canvasRef.current.style.cursor = hit ? "move" : "default";
+  }
+
   function onPointerMoveCanvas(event) {
-    if (!dragRef.current) return;
+    if (!dragRef.current) {
+      onPointerHover(event);
+      return;
+    }
     const { x, y } = getCanvasPoint(event);
     const { element, offsetX, offsetY, scale } = dragRef.current;
     const box = boxesRef.current[element];
@@ -349,7 +364,7 @@ export default function Home() {
             <div className="flex justify-between items-center gap-4">
               <Field label="Text X" labelFor="textX">
                 <input
-                  className="border px-2 py-1 rounded"
+                  className={inputCls("name")}
                   id="textX"
                   name="textX"
                   type="number"
@@ -364,7 +379,7 @@ export default function Home() {
 
               <Field label="Text Y" labelFor="textY">
                 <input
-                  className="border px-2 py-1 rounded"
+                  className={inputCls("name")}
                   id="textY"
                   name="textY"
                   type="number"
@@ -381,7 +396,7 @@ export default function Home() {
             <div className="flex justify-between items-center gap-4">
               <Field label="Org Text X" labelFor="orgTextX">
                 <input
-                  className="border px-2 py-1 rounded"
+                  className={inputCls("org")}
                   id="orgTextX"
                   name="orgTextX"
                   type="number"
@@ -396,7 +411,7 @@ export default function Home() {
 
               <Field label="Org Text Y" labelFor="orgTextY">
                 <input
-                  className="border px-2 py-1 rounded"
+                  className={inputCls("org")}
                   id="orgTextY"
                   name="orgTextY"
                   type="number"
