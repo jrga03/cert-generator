@@ -42,18 +42,7 @@ export const attachImage = (ctx, { src, width, height, left, top }) =>
  */
 const addPageToZip = (
   zip,
-  {
-    name,
-    org,
-    pageWidth,
-    pageHeight,
-    img: src,
-    fontSize: _fontSize,
-    textX,
-    textY,
-    orgTextX,
-    orgTextY,
-  },
+  { row, rowIndex, elements, globalFontSize, pageWidth, pageHeight, img: src },
   mime
 ) =>
   new Promise(async (resolve, reject) => {
@@ -62,11 +51,9 @@ const addPageToZip = (
     canvas.height = pageHeight;
     const ctx = canvas.getContext("2d");
 
-    // set background
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add bg photo
     await attachImage(ctx, {
       src,
       width: pageWidth,
@@ -75,27 +62,25 @@ const addPageToZip = (
       top: 0,
     });
 
-    const fontSize = `${_fontSize}px`;
-    const fontFamily = "Arial";
-    ctx.font = [fontSize, fontFamily].join(" ");
     ctx.fillStyle = "#000";
     ctx.textAlign = "center";
 
-    // Add text
-    ctx.fillText(name, textX, textY);
-    // Add org text
-    ctx.fillText(org, orgTextX, orgTextY);
+    for (const el of elements) {
+      const fontSizePx = el.fontSize ?? globalFontSize;
+      ctx.font = `${fontSizePx}px Arial`;
+      const cell = row[el.columnIndex] ?? "";
+      ctx.fillText(cell, el.x, el.y);
+    }
 
-    // Create image from canvas
     const img = new Image();
     img.src = canvas.toDataURL(mime, 1.0);
     img.width = canvas.width;
     img.height = canvas.height;
 
     img.addEventListener("load", function () {
-      const fileName = `${name}.png`;
+      const baseName = (row[0] && String(row[0]).trim()) || `cert-${rowIndex + 1}`;
+      const fileName = `${baseName}.png`;
       const base64 = img.src.split(",")[1];
-      // Add image to zip
       zip.file(fileName, base64, { base64: true });
       resolve();
     });
@@ -103,67 +88,29 @@ const addPageToZip = (
     img.addEventListener("error", reject);
   });
 
-/**
- *
- * @param {"image/png"|"image/jpeg"} mime
- * @param {{
- *   names: string[],
- *   orgs: string[],
- *   img: string,
- *   fontSize: number,
- *   textX: number,
- *   textY: number,
- *   orgTextX: number,
- *   orgTextY: number,
- * }} data
- * @returns {Blob}
- */
-const constructZip = async (
-  mime,
-  { names, orgs, img, fontSize, textX, textY, orgTextX, orgTextY },
-  onProgress
-) => {
+const constructZip = async (mime, { elements, globalFontSize, rows, img }, onProgress) => {
   const pageWidth = PAGE_WIDTH;
   const pageHeight = PAGE_HEIGHT;
-
-  // create zip
   const zip = new JSZip();
 
-  /**
-   * Start of zip content
-   */
-  for (const [index, name] of names.entries()) {
-    const pageData = {
-      name,
-      org: orgs[index],
-      pageWidth,
-      pageHeight,
-      img,
-      fontSize,
-      textX,
-      textY,
-      orgTextX,
-      orgTextY,
-    };
-
-    await addPageToZip(zip, pageData, mime);
-    onProgress?.(index + 1, names.length);
+  for (const [rowIndex, row] of rows.entries()) {
+    await addPageToZip(
+      zip,
+      { row, rowIndex, elements, globalFontSize, pageWidth, pageHeight, img },
+      mime
+    );
+    onProgress?.(rowIndex + 1, rows.length);
   }
-  /**
-   * End of zip content
-   */
 
-  const blob = await zip.generateAsync({ type: "blob" });
-  return blob;
+  return zip.generateAsync({ type: "blob" });
 };
 
 /**
  * @param {{
- *   names: string[],
+ *   elements: Array<{id, columnIndex, label, x, y, fontSize: number|null}>,
+ *   globalFontSize: number,
+ *   rows: string[][],
  *   img: string,
- *   fontSize: number,
- *   textX: number,
- *   textY: number,
  * }} data
  */
 export async function downloadAsPhoto(data, onProgress) {
