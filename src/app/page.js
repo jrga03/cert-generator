@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
 
@@ -283,50 +286,27 @@ export default function Home() {
             <Card>
               <CardHeader><CardTitle>Output</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Field label="Download as:" labelFor="type">
-                  <div>
-                    <input
-                      id="pdf"
-                      name="type"
-                      type="radio"
-                      value="pdf"
-                      required
-                      checked={outputType === "pdf"}
-                      onChange={() => setOutputType("pdf")}
-                    />
-                    <label htmlFor="pdf" className="ml-2">
-                      PDF
-                    </label>
-                  </div>
-                  <div>
-                    <input
-                      id="png"
-                      name="type"
-                      type="radio"
-                      value="png"
-                      required
-                      checked={outputType === "png"}
-                      onChange={() => setOutputType("png")}
-                    />
-                    <label htmlFor="png" className="ml-2">
-                      PNG
-                    </label>
-                  </div>
-                </Field>
+                <div className="space-y-2">
+                  <Label>Format</Label>
+                  <Tabs value={outputType} onValueChange={setOutputType} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="pdf">PDF</TabsTrigger>
+                      <TabsTrigger value="png">PNG</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
 
-                {/* Switch */}
-                <div className="flex flex-row items-center mb-6 select-none">
-                  <input
+                <div className="flex items-center gap-3">
+                  <Switch
                     id="separate"
-                    name="separate"
-                    type="checkbox"
                     checked={separate}
-                    onChange={(e) => setSeparate(e.target.checked)}
+                    onCheckedChange={setSeparate}
+                    disabled={outputType === "png"}
                   />
-                  <label htmlFor="separate" className="ml-2 font-bold text-lg text-gray-900">
-                    Download as separate files?
-                  </label>
-                  <span className="ml-1 italic text-gray-900">(for PDF only)</span>
+                  <Label htmlFor="separate" className="font-normal">
+                    Download as separate files
+                    <span className="text-muted-foreground"> (PDF only)</span>
+                  </Label>
                 </div>
               </CardContent>
             </Card>
