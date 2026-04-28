@@ -9,7 +9,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `yarn start` — serve the production build
 - `yarn lint` — run `next lint` (ESLint, `next/core-web-vitals` config)
 
-No test framework is configured.
+- `yarn test` — run Jest in watch mode
+- `yarn test:run` — run Jest once (CI-style)
+
+Tests live next to the units they cover (`src/utils/*.test.js`). Test framework: Jest via `next/jest` with `jsdom`. We unit-test pure helpers; canvas/PDF/PNG rendering is verified by manual `yarn dev` runs.
 
 ## Architecture
 
