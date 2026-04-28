@@ -66,6 +66,13 @@ export default function Home() {
     if (typeof saved.separate === "boolean") setSeparate(saved.separate);
   }, []);
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      saveSettings({ numberInputs, outputType, separate });
+    }, 250);
+    return () => clearTimeout(id);
+  }, [numberInputs, outputType, separate]);
+
   useLayoutEffect(() => {
     function _generatePreview() {
       const updatePreview = () =>
