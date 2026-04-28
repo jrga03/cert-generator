@@ -27,6 +27,8 @@ function Field({ label, labelFor, children, helperText }) {
 
 const DEFAULT_FONT_SIZE = 75;
 
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
 export default function Home() {
   const [bgPhoto, setBgPhoto] = useState(null);
   const [hasPreview, setHasPreview] = useState(null);
@@ -49,6 +51,7 @@ export default function Home() {
   const formRef = useRef(null);
   const canvasRef = useRef(null);
   const boxesRef = useRef(null);
+  const dragRef = useRef(null); // null | { element, offsetX, offsetY, scale }
 
   useLayoutEffect(() => {
     function _generatePreview() {
@@ -161,6 +164,51 @@ export default function Home() {
     const { x, y } = getCanvasPoint(event);
     const hit = hitTest(boxesRef.current, x, y);
     setSelectedElement(hit);
+    if (!hit) return;
+
+    const box = boxesRef.current[hit];
+    dragRef.current = {
+      element: hit,
+      offsetX: x - box.x,
+      offsetY: y - box.y,
+      scale: boxesRef.current.scale,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onPointerMoveCanvas(event) {
+    if (!dragRef.current) return;
+    const { x, y } = getCanvasPoint(event);
+    const { element, offsetX, offsetY, scale } = dragRef.current;
+    const box = boxesRef.current[element];
+
+    const newCanvasX = x - offsetX;
+    const newCanvasY = y - offsetY;
+
+    const originCanvasX = newCanvasX + box.width / 2;
+    const originCanvasY = newCanvasY + box.height * 0.8;
+
+    const pageX = clamp(Math.round(originCanvasX / scale), 0, PAGE_WIDTH);
+    const pageY = clamp(Math.round(originCanvasY / scale), 0, PAGE_HEIGHT);
+
+    setNumberInputs((prev) => {
+      const next = { ...prev };
+      if (element === "name") {
+        next.textX = pageX;
+        next.textY = pageY;
+      } else {
+        next.orgTextX = pageX;
+        next.orgTextY = pageY;
+      }
+      return next;
+    });
+  }
+
+  function onPointerUpCanvas(event) {
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   async function onSubmit(event) {
@@ -305,7 +353,7 @@ export default function Home() {
                   id="textX"
                   name="textX"
                   type="number"
-                  defaultValue={numberInputs.textX}
+                  value={numberInputs.textX}
                   min={0}
                   max={Number.MAX_SAFE_INTEGER}
                   step={1}
@@ -320,7 +368,7 @@ export default function Home() {
                   id="textY"
                   name="textY"
                   type="number"
-                  defaultValue={numberInputs.textY}
+                  value={numberInputs.textY}
                   min={0}
                   max={Number.MAX_SAFE_INTEGER}
                   step={1}
@@ -337,7 +385,7 @@ export default function Home() {
                   id="orgTextX"
                   name="orgTextX"
                   type="number"
-                  defaultValue={numberInputs.orgTextX}
+                  value={numberInputs.orgTextX}
                   min={0}
                   max={Number.MAX_SAFE_INTEGER}
                   step={1}
@@ -352,7 +400,7 @@ export default function Home() {
                   id="orgTextY"
                   name="orgTextY"
                   type="number"
-                  defaultValue={numberInputs.orgTextY}
+                  value={numberInputs.orgTextY}
                   min={0}
                   max={Number.MAX_SAFE_INTEGER}
                   step={1}
@@ -368,7 +416,7 @@ export default function Home() {
                 id="fontSize"
                 name="fontSize"
                 type="number"
-                defaultValue={numberInputs.fontSize}
+                value={numberInputs.fontSize}
                 min={1}
                 max={Number.MAX_SAFE_INTEGER}
                 step={1}
@@ -382,6 +430,9 @@ export default function Home() {
                 className="w-full h-full touch-none"
                 ref={canvasRef}
                 onPointerDown={onPointerDownCanvas}
+                onPointerMove={onPointerMoveCanvas}
+                onPointerUp={onPointerUpCanvas}
+                onPointerCancel={onPointerUpCanvas}
               />
               {!hasPreview && (
                 <div className="absolute inset-0 border rounded italic uppercase flex items-center justify-center text-gray-400">
