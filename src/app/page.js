@@ -9,7 +9,7 @@ import { readAsDataURL } from "@/utils/data-url";
 import { generatePreview, hitTest } from "@/utils/preview";
 import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
 import { ProgressOverlay } from "@/components/progress-overlay";
-import { Toast } from "@/components/toast";
+import { toast } from "sonner";
 import { loadSettings, saveSettings, migrateLoadedSettings } from "@/utils/persistence";
 import { updateElement as updateElementHelper, parseCertCsv } from "@/utils/elements";
 
@@ -39,7 +39,6 @@ export default function Home() {
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [csvRows, setCsvRows] = useState(null); // string[][]
   const [progress, setProgress] = useState(null);
-  const [error, setError] = useState(null);
   const [csvError, setCsvError] = useState(null);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
   const [selectedElementId, setSelectedElementId] = useState(null);
@@ -223,7 +222,7 @@ export default function Home() {
     const img = await readAsDataURL(entries.bgPhoto);
 
     if (!csvRows || csvRows.length === 0) {
-      setError("Please upload a CSV first.");
+      toast.error("Please upload a CSV first.");
       return;
     }
 
@@ -237,11 +236,10 @@ export default function Home() {
     };
 
     try {
-      setError(null);
       setProgress({ current: 0, total: csvRows.length });
       await download(data, (current, total) => setProgress({ current, total }));
     } catch (err) {
-      setError(err?.message || "Failed to generate certificates.");
+      toast.error(err?.message || "Failed to generate certificates.");
     } finally {
       setProgress(null);
     }
@@ -250,7 +248,6 @@ export default function Home() {
   return (
     <>
       {progress && <ProgressOverlay current={progress.current} total={progress.total} />}
-      <Toast message={error} onClose={() => setError(null)} />
       <Script
         src="https://github.com/foliojs/pdfkit/releases/download/v0.12.1/pdfkit.standalone.js"
         strategy="lazyOnload"
