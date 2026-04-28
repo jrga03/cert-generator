@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Script from "next/script";
 import Papa from "papaparse";
 
@@ -10,6 +10,7 @@ import { generatePreview, hitTest } from "@/utils/preview";
 import { PAGE_HEIGHT, PAGE_WIDTH } from "@/utils/page-size";
 import { ProgressOverlay } from "@/components/progress-overlay";
 import { Toast } from "@/components/toast";
+import { loadSettings, saveSettings } from "@/utils/persistence";
 
 import "./page.css";
 
@@ -45,6 +46,8 @@ export default function Home() {
   const [csvError, setCsvError] = useState(null);
   const [previewRowIndex, setPreviewRowIndex] = useState(0);
   const [selectedElement, setSelectedElement] = useState(null); // null | "name" | "org"
+  const [outputType, setOutputType] = useState("pdf");
+  const [separate, setSeparate] = useState(false);
   const isGenerating = progress !== null;
   const previewName = csvRows?.[previewRowIndex]?.name;
   const previewOrg = csvRows?.[previewRowIndex]?.org;
@@ -52,6 +55,16 @@ export default function Home() {
   const canvasRef = useRef(null);
   const boxesRef = useRef(null);
   const dragRef = useRef(null); // null | { element, offsetX, offsetY, scale }
+
+  useEffect(() => {
+    const saved = loadSettings();
+    if (!saved) return;
+    if (saved.numberInputs) {
+      setNumberInputs((prev) => ({ ...prev, ...saved.numberInputs }));
+    }
+    if (saved.outputType) setOutputType(saved.outputType);
+    if (typeof saved.separate === "boolean") setSeparate(saved.separate);
+  }, []);
 
   useLayoutEffect(() => {
     function _generatePreview() {
@@ -273,13 +286,29 @@ export default function Home() {
           <div className="container flex flex-col mx-auto">
             <Field label="Download as:" labelFor="type">
               <div>
-                <input id="pdf" name="type" type="radio" value="pdf" required />
+                <input
+                  id="pdf"
+                  name="type"
+                  type="radio"
+                  value="pdf"
+                  required
+                  checked={outputType === "pdf"}
+                  onChange={() => setOutputType("pdf")}
+                />
                 <label htmlFor="pdf" className="ml-2">
                   PDF
                 </label>
               </div>
               <div>
-                <input id="png" name="type" type="radio" value="png" required />
+                <input
+                  id="png"
+                  name="type"
+                  type="radio"
+                  value="png"
+                  required
+                  checked={outputType === "png"}
+                  onChange={() => setOutputType("png")}
+                />
                 <label htmlFor="png" className="ml-2">
                   PNG
                 </label>
@@ -288,7 +317,13 @@ export default function Home() {
 
             {/* Switch */}
             <div className="flex flex-row items-center mb-6 select-none">
-              <input id="separate" name="separate" type="checkbox" />
+              <input
+                id="separate"
+                name="separate"
+                type="checkbox"
+                checked={separate}
+                onChange={(e) => setSeparate(e.target.checked)}
+              />
               {/* <label htmlFor="separate" className="switch-toggle">
                 Toggle
               </label> */}
